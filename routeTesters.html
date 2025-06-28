@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>JeepnEE - Route Tester</title>
+  <meta name="description" content="JeepnEE – Route selection for all jeepneys.">
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-teal: #4db6ac;
+      --accent-blue: #5fa8d3;
+      --light-bg: #f0fdfc;
+      --alt-bg: #e0f7fa;
+      --text-color: #2e3d4c;
+      --white: #ffffff;
+      --light-gray: #f1f1f1;
+      --cta-hover-blue: #0d47a1;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: var(--text-color);
+      background-color: #f1f1f1;
+    }
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background-color: var(--primary-teal);
+      z-index: 1000;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 20px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .logo-container {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .logo-img {
+      height: 30px;
+      margin-right: 10px;
+    }
+    .logo-text {
+      font-size: 20px;
+      font-weight: bold;
+      color: white;
+      text-decoration: none;
+    }
+    .nav-links {
+      display: flex;
+      gap: 20px;
+    }
+    .nav-links a {
+      text-decoration: none;
+      color: white;
+      font-weight: 500;
+      padding: 5px 10px;
+      border-radius: 5px;
+      transition: background-color 0.3s ease;
+    }
+    .nav-links a:hover {
+      background-color: #00897b;
+    }
+    .menu-toggle {
+      display: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: white;
+      z-index: 1001;
+      transition: color 0.3s ease;
+    }
+    .menu-toggle:hover,
+    .menu-toggle:active {
+      color: var(--cta-hover-blue);
+    }
+    .hero {
+      background-image: url('herobannerlight.png');
+      background-position: 75% center;
+      background-size: cover;
+      background-repeat: no-repeat;
+      color: white;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      min-height: 300px;
+      padding: 90px 20px 15px;
+      flex-direction: column;
+      border-radius: 0;
+      margin-top: 60px;
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+    }
+    .hero h1 {
+      font-size: 2.5em;
+      margin-bottom: 20px;
+      text-align: left;
+    }
+    .hero p {
+      font-size: 1.2em;
+      opacity: 0.95;
+      text-align: left;
+      max-width: 600px;
+    }
+    section {
+      background-color: var(--white);
+      padding: 60px 20px;
+      margin: 2rem 0;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+      transition: background-color 0.5s ease;
+      max-width: 900px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    h2 {
+      color: #1a3d4c;
+      margin-bottom: 1rem;
+      font-size: 1.5rem;
+      font-weight: 600;
+      text-align: center;
+    }
+    .route-tester-list {
+      list-style: none;
+      padding: 0;
+      margin: 0 auto;
+      max-width: 600px;
+    }
+    .route-tester-list li {
+      font-size: 1.1em;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #e0e0e0;
+      padding-bottom: 10px;
+    }
+    .route-tester-list label {
+      min-width: 110px;
+      font-weight: 500;
+      margin-right: 10px;
+    }
+    .route-tester-list select {
+      padding: 8px 12px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      margin-right: 10px;
+    }
+    .route-tester-list button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 5px;
+      background: var(--accent-blue);
+      color: white;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background 0.2s;
+    }
+    .route-tester-list button:hover {
+      background: var(--cta-hover-blue);
+    }
+    .route-status {
+      margin-left: 10px;
+      color: var(--accent-blue);
+      font-size: 1em;
+      min-width: 90px;
+    }
+    footer {
+      background-color: var(--primary-teal);
+      color: white;
+      text-align: center;
+      padding: 30px 20px;
+      font-size: 14px;
+      margin-top: 2rem;
+    }
+    footer a {
+      color: white;
+      text-decoration: underline;
+    }
+    @media (max-width: 768px) {
+      .nav-links {
+        display: none;
+        position: absolute;
+        top: 60px;
+        right: 20px;
+        flex-direction: column;
+        background-color: var(--primary-teal);
+        border: 1px solid #ddd;
+        padding: 10px 20px;
+        border-radius: 5px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+      }
+      .nav-links.show {
+        display: flex;
+      }
+      .menu-toggle {
+        display: block;
+      }
+      section {
+        padding: 30px 10px;
+      }
+      .route-tester-list li {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+      .route-status {
+        margin-left: 0;
+        margin-top: 6px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="index.html" class="logo-container">
+      <img src="logo-white.png" alt="rEElax Logo" class="logo-img" />
+      <span class="logo-text">rEElax Solutions</span>
+    </a>
+    <div class="menu-toggle" onclick="toggleMenu()">☰</div>
+    <div class="nav-links" id="navLinks">
+      <a href="index.html#services">Services</a>
+      <a href="index.html#about">About</a>
+      <a href="index.html#mission">Mission</a>
+      <a href="index.html#vision">Vision</a>
+      <a href="index.html#contact">Contact</a>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <h1>Route Selector for All Jeepneys</h1>
+    <p>
+      Select and update the route for each jeepney. This will update the route data in Firebase for use in the system.
+    </p>
+  </section>
+
+  <section>
+    <h2>Route Selection</h2>
+    <ul class="route-tester-list">
+      <li>
+        <label for="route-jeepney1">Jeepney 1</label>
+        <select id="route-jeepney1">
+          <option value="">Select route</option>
+          <option value="San Felipe">San Felipe</option>
+          <option value="Cabangan">Cabangan</option>
+          <option value="Botolan">Botolan</option>
+          <option value="Iba">Iba</option>
+        </select>
+        <button data-jeep="jeepney1">Save Route</button>
+        <span class="route-status" id="status-jeepney1"></span>
+      </li>
+      <li>
+        <label for="route-jeepney2">Jeepney 2</label>
+        <select id="route-jeepney2">
+          <option value="">Select route</option>
+          <option value="San Felipe">San Felipe</option>
+          <option value="Cabangan">Cabangan</option>
+          <option value="Botolan">Botolan</option>
+          <option value="Iba">Iba</option>
+        </select>
+        <button data-jeep="jeepney2">Save Route</button>
+        <span class="route-status" id="status-jeepney2"></span>
+      </li>
+      <li>
+        <label for="route-jeepney3">Jeepney 3</label>
+        <select id="route-jeepney3">
+          <option value="">Select route</option>
+          <option value="San Felipe">San Felipe</option>
+          <option value="Cabangan">Cabangan</option>
+          <option value="Botolan">Botolan</option>
+          <option value="Iba">Iba</option>
+        </select>
+        <button data-jeep="jeepney3">Save Route</button>
+        <span class="route-status" id="status-jeepney3"></span>
+      </li>
+      <li>
+        <label for="route-jeepney4">Jeepney 4</label>
+        <select id="route-jeepney4">
+          <option value="">Select route</option>
+          <option value="San Felipe">San Felipe</option>
+          <option value="Cabangan">Cabangan</option>
+          <option value="Botolan">Botolan</option>
+          <option value="Iba">Iba</option>
+        </select>
+        <button data-jeep="jeepney4">Save Route</button>
+        <span class="route-status" id="status-jeepney4"></span>
+      </li>
+      <li>
+        <label for="route-jeepney5">Jeepney 5</label>
+        <select id="route-jeepney5">
+          <option value="">Select route</option>
+          <option value="San Felipe">San Felipe</option>
+          <option value="Cabangan">Cabangan</option>
+          <option value="Botolan">Botolan</option>
+          <option value="Iba">Iba</option>
+        </select>
+        <button data-jeep="jeepney5">Save Route</button>
+        <span class="route-status" id="status-jeepney5"></span>
+      </li>
+      <li>
+        <label for="route-jeepney6">Jeepney 6</label>
+        <select id="route-jeepney6">
+          <option value="">Select route</option>
+          <option value="San Felipe">San Felipe</option>
+          <option value="Cabangan">Cabangan</option>
+          <option value="Botolan">Botolan</option>
+          <option value="Iba">Iba</option>
+        </select>
+        <button data-jeep="jeepney6">Save Route</button>
+        <span class="route-status" id="status-jeepney6"></span>
+      </li>
+      <li>
+        <label for="route-jeepney7">Jeepney 7</label>
+        <select id="route-jeepney7">
+          <option value="">Select route</option>
+          <option value="San Felipe">San Felipe</option>
+          <option value="Cabangan">Cabangan</option>
+          <option value="Botolan">Botolan</option>
+          <option value="Iba">Iba</option>
+        </select>
+        <button data-jeep="jeepney7">Save Route</button>
+        <span class="route-status" id="status-jeepney7"></span>
+      </li>
+      <li>
+        <label for="route-jeepney9">Jeepney 9</label>
+        <select id="route-jeepney9">
+          <option value="">Select route</option>
+          <option value="San Felipe">San Felipe</option>
+          <option value="Cabangan">Cabangan</option>
+          <option value="Botolan">Botolan</option>
+          <option value="Iba">Iba</option>
+        </select>
+        <button data-jeep="jeepney9">Save Route</button>
+        <span class="route-status" id="status-jeepney9"></span>
+      </li>
+    </ul>
+  </section>
+
+  <footer>
+    <p>© 2025 rEElax Solutions. All rights reserved.</p>
+    <p><a href="#">Privacy Policy</a> | <a href="#">Terms</a></p>
+  </footer>
+
+  <script>
+    function toggleMenu() {
+      document.getElementById('navLinks').classList.toggle('show');
+    }
+  </script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getDatabase, ref, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyC7Y0vwDCa4j-PFSBMO4LMP3iBTE97D5sU",
+      authDomain: "jeepneytracking1.firebaseapp.com",
+      databaseURL: "https://jeepneytracking1-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "jeepneytracking1",
+      storageBucket: "jeepneytracking1.firebasestorage.app",
+      messagingSenderId: "999853984026",
+      appId: "1:999853984026:web:0cc9596c18f27b5fd744a3",
+      measurementId: "G-LWM8JJH3KW"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+
+    const jeepneyIDs = [
+      "jeepney1", "jeepney2", "jeepney3", "jeepney4",
+      "jeepney5", "jeepney6", "jeepney7", "jeepney9"
+    ];
+
+    jeepneyIDs.forEach(id => {
+      const select = document.getElementById(`route-${id}`);
+      const btn = document.querySelector(`button[data-jeep="${id}"]`);
+      const status = document.getElementById(`status-${id}`);
+
+      btn.addEventListener('click', () => {
+        const selectedRoute = select.value;
+        if (!selectedRoute) {
+          status.textContent = "Please select a route.";
+          status.style.color = "red";
+          return;
+        }
+        const locationRef = ref(database, `jeepneys/${id}`);
+        update(locationRef, { route: selectedRoute })
+          .then(() => {
+            status.textContent = "Route updated!";
+            status.style.color = "var(--accent-blue)";
+          })
+          .catch(() => {
+            status.textContent = "Error updating route!";
+            status.style.color = "red";
+          });
+      });
+    });
+  </script>
+</body>
+</html>

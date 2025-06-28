@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>JeepnEE Mapping</title>
+  <meta name="description" content="JeepnEE – Real-time jeepney tracking and monitoring.">
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-teal: #4db6ac;
+      --accent-blue: #5fa8d3;
+      --light-bg: #f0fdfc;
+      --alt-bg: #e0f7fa;
+      --text-color: #2e3d49;
+      --white: #ffffff;
+      --light-gray: #f1f1f1;
+      --cta-hover-blue: #0d47a1;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Match index.html */
+      color: var(--text-color);
+      background-color: var(--white);
+    }
+
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background-color: var(--primary-teal);
+      z-index: 1000;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 20px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .logo-img {
+      height: 30px;
+      margin-right: 10px;
+    }
+
+    .logo-text {
+      font-size: 20px; /* Fixed size for consistency */
+      font-weight: bold;
+      color: white;
+      text-decoration: none;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 20px;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: white;
+      font-weight: 500;
+      padding: 5px 10px;
+      border-radius: 5px;
+      transition: background-color 0.3s ease;
+    }
+
+    .nav-links a:hover {
+      background-color: #00897b;
+    }
+
+    .menu-toggle {
+      display: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: white;
+      z-index: 1001;
+      transition: color 0.3s ease;
+    }
+
+    .menu-toggle:hover,
+    .menu-toggle:active {
+      color: var(--cta-hover-blue);
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto 2rem;  /* Remove top margin, keep bottom margin for gap below map */
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+      padding: 2rem;
+    }
+
+    h2 {
+      color: #1a3d4c;
+      margin-bottom: 1rem;
+      font-size: 1.5rem;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    #map {
+      width: 100%;
+      height: 500px;
+      border-radius: 10px;
+      border: 1px solid #e0e0e0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      margin-bottom: 1rem;
+    }
+
+    button {
+      padding: 10px 20px;
+      background-color: var(--accent-blue);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: var(--cta-hover-blue);
+    }
+
+    section#contact {
+      background-color: var(--white);
+      padding: 60px 20px;
+      margin-top: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+      max-width: 900px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    section#contact h2 {
+      color: #1a3d4c;
+      margin-bottom: 1rem;
+      font-size: 1.5rem;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    section#contact p {
+      max-width: 800px;
+      margin: 0 auto 20px;
+      text-align: center;
+    }
+
+    footer {
+      background-color: var(--primary-teal);
+      color: white;
+      text-align: center;
+      padding: 30px 20px;
+      font-size: 14px;
+      margin-top: 2rem;
+    }
+
+    footer a {
+      color: white;
+      text-decoration: underline;
+    }
+
+    .hero {
+      background-image: url('herobannerlight.png');
+      background-position: 75% center;
+      background-size: cover;
+      background-repeat: no-repeat;
+      color: white;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      min-height: 400px;
+      padding: 90px 20px 15px;
+      flex-direction: column;
+      border-radius: 0;
+      margin-top: 60px;      /* space below nav */
+      margin-bottom: 2rem;   /* CHANGE THIS */
+      box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+    }
+
+    /* Make gap below hero same as other section gaps */
+    .hero {
+      margin-bottom: 2rem; /* If your sections use 2rem, keep this. If they use a different value, match it here. */
+    }
+
+    @media (max-width: 768px) {
+      .nav-links {
+        display: none;
+        position: absolute;
+        top: 60px;
+        right: 20px;
+        flex-direction: column;
+        background-color: var(--primary-teal);
+        border: 1px solid #ddd;
+        padding: 10px 20px;
+        border-radius: 5px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+      }
+
+      .nav-links.show {
+        display: flex;
+      }
+
+      .menu-toggle {
+        display: block;
+      }
+
+      .container {
+        padding: 1rem;
+      }
+
+      #map {
+        height: 300px;
+      }
+
+      section#contact {
+        padding: 30px 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Make jeepneyData global -->
+  <script>
+    window.jeepneyData = {
+      "jeepney1": { lat: 15.179446, lng: 120.04668, title: "Allejos", link: "jeepney1.html", route: "San Felipe" },
+      "jeepney2": { lat: 15.1805, lng: 120.0446, title: "Barrion", link: "jeepney2.html", route: "Cabangan" },
+      "jeepney3": { lat: 15.15888, lng: 120.0554, title: "Canona", link: "jeepney3.html", route: "Botolan" },
+      "jeepney4": { lat: 15.17, lng: 120.0446, title: "Deboma", link: "jeepney4.html", route: "Iba" },
+      "jeepney5": { lat: 15.18, lng: 120.0446, title: "Dolojan", link: "jeepney5.html", route: "San Felipe" },
+      "jeepney6": { lat: 15.19, lng: 120.0446, title: "Ora", link: "jeepney6.html", route: "Cabangan" },
+      "jeepney7": { lat: 15.20, lng: 120.0446, title: "Salazar", link: "jeepney7.html", route: "Botolan" },
+      "jeepney9": { lat: 15.205, lng: 120.05, title: "testJeep", link: "testJeepData.html", route: "Iba" }
+    };
+  </script>
+
+  <nav>
+    <a href="index.html" class="logo-container">
+      <img src="logo-white.png" alt="rEElax Logo" class="logo-img" />
+      <span class="logo-text">rEElax Solutions</span>
+    </a>
+    <div class="menu-toggle" onclick="toggleMenu()">☰</div>
+    <div class="nav-links" id="navLinks">
+      <a href="index.html#services">Services</a>
+      <a href="index.html#about">About</a>
+      <a href="index.html#mission">Mission</a>
+      <a href="index.html#vision">Vision</a>
+      <a href="index.html#contact">Contact</a>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <h1>Welcome to JeepnEE Members</h1>
+    <p>
+      This is a placeholder hero section. Use this space to highlight important information, announcements, or a brief introduction for your members page.
+    </p>
+  </section>
+
+  <div class="container">
+    <h2>JeepnEE Real-Time Map</h2>
+    <div id="map"></div>
+    <div class="map-controls" style="display: flex; gap: 1rem; justify-content: center; align-items: center; margin-bottom: 1rem;">
+      <label for="from-select" style="font-weight: 500;">From:</label>
+      <select id="from-select" style="padding: 8px 12px; border-radius: 5px; border: 1px solid #ccc;">
+        <option value="">Select starting point</option>
+        <option value="San Felipe">San Felipe</option>
+        <option value="Cabangan">Cabangan</option>
+        <option value="Botolan">Botolan</option>
+        <option value="Iba">Iba</option>
+      </select>
+      <label for="to-select" style="font-weight: 500;">To:</label>
+      <select id="to-select" style="padding: 8px 12px; border-radius: 5px; border: 1px solid #ccc;">
+        <option value="">Select destination</option>
+        <option value="San Felipe">San Felipe</option>
+        <option value="Cabangan">Cabangan</option>
+        <option value="Botolan">Botolan</option>
+        <option value="Iba">Iba</option>
+      </select>
+    </div>
+    <button onclick="window.location.href='index.html'">Back to Index</button>
+  </div>
+
+  <section id="contact">
+    <h2>Contact Us</h2>
+    <p>Email: <a href="mailto:reelax.solutions@gmail.com">reelax.solutions@gmail.com</a></p>
+    <p>Phone: +63 912 345 6789</p>
+  </section>
+
+  <footer>
+    <p>© 2025 rEElax Solutions. All rights reserved.</p>
+    <p><a href="#">Privacy Policy</a> | <a href="#">Terms</a></p>
+  </footer>
+
+  <!-- Google Maps API -->
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDjEkI9duxMBLHWzrZeAmkWP8IlQCyLPmE&callback=initMap"></script>
+
+  <!-- Firebase Integration -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyC7Y0vwDCa4j-PFSBMO4LMP3iBTE97D5sU",
+      authDomain: "jeepneytracking1.firebaseapp.com",
+      databaseURL: "https://jeepneytracking1-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "jeepneytracking1",
+      storageBucket: "jeepneytracking1.appspot.com",
+      messagingSenderId: "999853984026",
+      appId: "1:999853984026:web:0cc9596c18f27b5fd744a3"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+
+    const jeepneysRef = {
+      "jeepney1": ref(database, "jeepneys/jeepney1"),
+      "jeepney2": ref(database, "jeepneys/jeepney2"),
+      "jeepney3": ref(database, "jeepneys/jeepney3"),
+      "jeepney4": ref(database, "jeepneys/jeepney4"),
+      "jeepney5": ref(database, "jeepneys/jeepney5"),
+      "jeepney6": ref(database, "jeepneys/jeepney6"),
+      "jeepney7": ref(database, "jeepneys/jeepney7"),
+      "jeepney9": ref(database, "jeepneys/jeepney9") // Added testJeep
+    };
+
+    function updateJeepneyData(jeepneyKey, data) {
+      if (data && window.markers[jeepneyKey]) {
+        const { latitude, longitude, route } = data;
+        const marker = window.markers[jeepneyKey];
+        marker.latestData = { latitude, longitude, route };
+        window.latestRoutes[jeepneyKey] = route;
+        if (latitude && longitude) {
+          const newPos = new google.maps.LatLng(latitude, longitude);
+          marker.setPosition(newPos);
+        }
+        // If the infoWindow is open on this marker, update its content live
+        if (infoWindow.anchor === marker) {
+          infoWindow.setContent(generateInfoContent(jeepneyKey, marker));
+        }
+        // Re-filter markers if destination is selected
+        const dest = document.getElementById('to-select').value;
+        if (dest) {
+          if (route === dest) {
+            marker.setMap(map);
+          } else {
+            marker.setMap(null);
+          }
+        } else {
+          marker.setMap(map);
+        }
+      }
+    }
+
+    // Helper to generate infoWindow content using the latest Firebase data
+    function generateInfoContent(jeepneyKey, marker) {
+      const title = window.jeepneyData[jeepneyKey]?.title || jeepneyKey;
+      const link = window.jeepneyData[jeepneyKey]?.link || "#";
+      const data = marker.latestData || {};
+      return `
+        <div>
+          <strong>${title}</strong><br>
+          Latitude: ${data.latitude !== undefined ? data.latitude : "N/A"}<br>
+          Longitude: ${data.longitude !== undefined ? data.longitude : "N/A"}<br>
+          Route: ${data.route ? data.route : "N/A"}<br><br>
+          <button onclick="window.location.href='${link}'">Go to ${title}</button>
+        </div>
+      `;
+    }
+
+    for (const key in jeepneysRef) {
+      onValue(jeepneysRef[key], (snapshot) => updateJeepneyData(key, snapshot.val()));
+    }
+
+    // Make generateInfoContent available globally for the map script
+    window.generateInfoContent = generateInfoContent;
+  </script>
+
+  <!-- Google Maps and Markers (must be global for callback) -->
+  <script>
+    let map;
+    let infoWindow;
+    window.markers = {};
+    window.latestRoutes = {}; // Store latest route for each jeepney
+
+    function filterMarkersByRoute(route) {
+      for (const [key, marker] of Object.entries(window.markers)) {
+        const latestRoute = window.latestRoutes[key];
+        if (!route || latestRoute === route) {
+          marker.setMap(map);
+        } else {
+          marker.setMap(null);
+        }
+      }
+    }
+
+    // This must be global for Google Maps callback
+    function initMap() {
+      map = new google.maps.Map(document.getElementById("map"), {
+        zoom: 12,
+        center: { lat: 15.179446, lng: 120.04668 }
+      });
+
+      infoWindow = new google.maps.InfoWindow();
+
+      // Use the global jeepneyData
+      const jeepneyData = window.jeepneyData;
+
+      for (const [key, data] of Object.entries(jeepneyData)) {
+        const marker = new google.maps.Marker({
+          position: { lat: data.lat, lng: data.lng },
+          map: map,
+          title: data.title
+        });
+
+        marker.latestData = { latitude: data.lat, longitude: data.lng, route: data.route };
+        window.markers[key] = marker;
+        window.latestRoutes[key] = data.route;
+
+        marker.addListener("click", function () {
+          if (typeof window.generateInfoContent === "function") {
+            infoWindow.setContent(window.generateInfoContent(key, marker));
+          } else {
+            infoWindow.setContent(`<strong>${data.title}</strong>`);
+          }
+          infoWindow.open(map, marker);
+        });
+      }
+
+      // Add event listener for destination select
+      document.getElementById('to-select').addEventListener('change', function () {
+        filterMarkersByRoute(this.value);
+      });
+    }
+  </script>
+</body>
+</html>
