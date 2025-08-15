@@ -381,10 +381,18 @@
     <button onclick="window.location.href='index.html'">Back to Index</button>
   </div>
 
+  <!-- Online Devices Section -->
+  <section id="online-devices" style="background: #fff; padding: 40px 20px; margin: 2rem auto 0 auto; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.07); max-width: 900px;">
+    <h2>Currently Online Devices</h2>
+    <p style="font-size:1.5em; text-align:center;">
+      <span id="onlineCount">Loading...</span> device(s) online
+    </p>
+  </section>
+  
   <!-- Help Us Section -->
   <section class="help-section" style="background: #fff;">
     <h2>Help us!</h2>
-    <p>
+    <p>x
       We are currently conducting research to improve JeepnEE. Your feedback is valuable to us! Please let us know your thoughts and suggestions about this project.
     </p>
     <div style="text-align:center;">
@@ -556,6 +564,30 @@
           document.getElementById('navLinks').classList.remove('show');
         });
       });
+    });
+  </script>
+
+  <!-- Firebase Presence Tracking -->
+  <script type="module">
+    import { getDatabase, ref, onValue, onDisconnect, set, serverTimestamp, remove } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+    // Use the same Firebase config and app as above
+    const database = getDatabase();
+
+    // Reference for connections
+    const connectionsRef = ref(database, 'connections');
+    const thisConnectionRef = ref(database, `connections/${Math.random().toString(36).substr(2, 9)}`);
+
+    // Add this device to the connections list
+    set(thisConnectionRef, { connectedAt: serverTimestamp() });
+
+    // Remove this device when disconnected
+    onDisconnect(thisConnectionRef).remove();
+
+    // Listen for changes in the number of connections
+    onValue(connectionsRef, (snapshot) => {
+      const count = snapshot.exists() ? snapshot.size : 0;
+      document.getElementById('onlineCount').textContent = count;
     });
   </script>
 </body>
