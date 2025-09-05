@@ -498,7 +498,7 @@
     let map;
     let infoWindow;
     window.markers = {};
-    window.latestRoutes = {}; // Store latest route for each jeepney
+    window.latestRoutes = {};
 
     function filterMarkersByRoute(route) {
       for (const [key, marker] of Object.entries(window.markers)) {
@@ -511,18 +511,68 @@
       }
     }
 
-    // This must be global for Google Maps callback
     function initMap() {
-      map = new google.maps.Map(document.getElementById("map"), {
-        zoom: 12,
-        center: { lat: 15.179446, lng: 120.04668 }
-      });
+      // Default center (San Felipe)
+      const defaultCenter = { lat: 15.179446, lng: 120.04668 };
 
-      infoWindow = new google.maps.InfoWindow();
+      // Try to get user's location
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const userCenter = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude
+            };
+            map = new google.maps.Map(document.getElementById("map"), {
+              zoom: 12,
+              center: userCenter
+            });
+            infoWindow = new google.maps.InfoWindow();
 
-      // Use the global jeepneyData
+            // Add blue marker for user location
+            const userMarker = new google.maps.Marker({
+              position: userCenter,
+              map: map,
+              title: "You are here.",
+              icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 8,
+                fillColor: "#1976d2",
+                fillOpacity: 1,
+                strokeWeight: 2,
+                strokeColor: "#ffffff"
+              }
+            });
+            userMarker.addListener("click", function () {
+              infoWindow.setContent('<div style="color:#1976d2;font-weight:bold;">You are here.</div>');
+              infoWindow.open(map, userMarker);
+            });
+
+            addJeepneyMarkers();
+          },
+          () => {
+            // If user denies or fails, use default center
+            map = new google.maps.Map(document.getElementById("map"), {
+              zoom: 12,
+              center: defaultCenter
+            });
+            infoWindow = new google.maps.InfoWindow();
+            addJeepneyMarkers();
+          }
+        );
+      } else {
+        // Browser doesn't support Geolocation
+        map = new google.maps.Map(document.getElementById("map"), {
+          zoom: 12,
+          center: defaultCenter
+        });
+        infoWindow = new google.maps.InfoWindow();
+        addJeepneyMarkers();
+      }
+    }
+
+    function addJeepneyMarkers() {
       const jeepneyData = window.jeepneyData;
-
       for (const [key, data] of Object.entries(jeepneyData)) {
         const marker = new google.maps.Marker({
           position: { lat: data.lat, lng: data.lng },
@@ -544,7 +594,6 @@
         });
       }
 
-      // Add event listener for destination select
       document.getElementById('to-select').addEventListener('change', function () {
         filterMarkersByRoute(this.value);
       });
