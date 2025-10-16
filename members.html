@@ -455,51 +455,6 @@
       .loc-slider::after { width: 18px; height: 18px; top: 4px; left: 4px; }
       .loc-toggle input:checked + .loc-slider::after { transform: translateX(18px); }
     }
-
-    /* Compact InfoWindow (callout) sizing to avoid internal scrolling on mobile */
-    .info-window-content {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      box-sizing: border-box;
-      min-width: 120px;
-      max-width: 200px; /* keep narrow so it fits mobile screens */
-      font-size: 0.92rem;
-      color: var(--text-color);
-      font-family: inherit;
-      word-break: break-word;
-      overflow: visible;
-    }
-    .info-window-content .iw-title {
-      font-weight: 700;
-      margin: 0;
-      font-size: 0.98rem;
-      color: var(--text-color);
-      line-height: 1.1;
-    }
-    .info-window-content .iw-route {
-      margin: 0;
-      font-size: 0.9rem;
-      color: rgba(46,61,73,0.9);
-    }
-    .info-window-button {
-      display: block;
-      width: 100%;
-      padding: 8px 10px;
-      background: var(--accent-blue);
-      color: #fff;
-      border-radius: 6px;
-      text-decoration: none;
-      font-weight: 600;
-      font-size: 0.88rem;
-      text-align: center;
-      box-sizing: border-box;
-    }
-    @media (max-width: 560px) {
-      .info-window-content { min-width: 110px; max-width: 170px; font-size: 0.88rem; gap: 4px; }
-      .info-window-content .iw-title { font-size: 0.95rem; }
-      .info-window-button { padding: 7px 8px; font-size: 0.85rem; }
-    }
   </style>
 </head>
 <body>
@@ -731,8 +686,7 @@
         center: { lat: 15.179446, lng: 120.04668 }
       });
 
-      // limit InfoWindow width so content remains compact (prevents internal scrolling)
-      infoWindow = new google.maps.InfoWindow({ maxWidth: 220 });
+      infoWindow = new google.maps.InfoWindow();
 
       // Use the global jeepneyData
       const jeepneyData = window.jeepneyData;
@@ -773,7 +727,7 @@
       if (el) el.textContent = "Permission: " + text;
     }
     
-    // Restore info window content (includes a button/link for each jeepney)
+    // Restore InfoWindow content generator so all jeepney markers show full callouts
     function escapeHtml(str) {
       return String(str || '').replace(/[&<>"'`=\/]/g, function (s) {
         return {
@@ -789,22 +743,27 @@
       const route = escapeHtml(data.route || '');
       const link = data.link ? escapeHtml(data.link) : '#';
 
-      // Return HTML string using responsive classes (smaller on mobile)
       return `
-        <div class="info-window-content">
-          <div class="iw-title">${title}</div>
-          ${route ? `<div class="iw-route">Route: ${route}</div>` : ''}
-          <a class="info-window-button" href="${link}" target="_blank" rel="noopener">View details</a>
+        <div class="info-window-content" style="min-width:120px;max-width:220px;font-family:inherit;color:var(--text-color)">
+          <div class="iw-title" style="font-weight:700;margin-bottom:6px;font-size:1rem;">${title}</div>
+          ${route ? `<div class="iw-route" style="margin-bottom:8px;font-size:0.9rem;color:rgba(46,61,73,0.9)">Route: ${route}</div>` : ''}
+          <a class="info-window-button" href="${link}" target="_blank" rel="noopener" style="display:inline-block;padding:8px 10px;background:var(--accent-blue);color:#fff;border-radius:6px;text-decoration:none;font-weight:600;font-size:0.9rem;">View details</a>
         </div>
       `;
     }
-
+    // make available globally (some code checks window.generateInfoContent)
+    window.generateInfoContent = generateInfoContent;
+    
     function centerMapOnPosition(position, zoomWhenCenter = 14) {
       const lat = position.coords.latitude;
       const lng = position.coords.longitude;
       const latLng = { lat, lng };
-      map.setCenter(latLng);
-      map.setZoom(zoomWhenCenter);
+
+      // Only recenter when zoomWhenCenter !== false.
+      if (zoomWhenCenter !== false) {
+        map.setCenter(latLng);
+        map.setZoom(zoomWhenCenter === undefined ? 14 : zoomWhenCenter);
+      }
 
       if (!window.userMarker) {
         window.userMarker = new google.maps.Marker({
@@ -820,6 +779,13 @@
             strokeColor: "#ffffff",
             strokeWeight: 2
           }
+        });
+
+        // show callout when clicking the user marker
+        window.userMarker.addListener("click", function () {
+          if (!infoWindow) infoWindow = new google.maps.InfoWindow({ maxWidth: 220 });
+          infoWindow.setContent('<div class="info-window-content"><div class="iw-title">You are here.</div></div>');
+          infoWindow.open(map, window.userMarker);
         });
       } else {
         window.userMarker.setPosition(latLng);
@@ -842,16 +808,17 @@
           // start watching to update marker
           if (window.userLocationWatchId == null) {
             window.userLocationWatchId = navigator.geolocation.watchPosition(
-              (p) => centerMapOnPosition(p, map.getZoom()),
-              (err) => {
-                console.warn("watchPosition error", err);
-                if (err.code === err.PERMISSION_DENIED) {
-                  disableLocationTracking(true);
-                }
-              },
-              { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
-            );
-          }
+              // update marker position only; do NOT recenter the map while user pans
+              (p) => centerMapOnPosition(p, false),
+               (err) => {
+                 console.warn("watchPosition error", err);
+                 if (err.code === err.PERMISSION_DENIED) {
+                   disableLocationTracking(true);
+                 }
+               },
+               { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+             );
+           }
         },
         (err) => {
           console.warn("getCurrentPosition error", err);
