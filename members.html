@@ -314,6 +314,192 @@
     .cta-button:hover {
       background-color: var(--cta-hover-blue);
     }
+
+    /* New: location permission UI */
+    .location-section {
+      background: #fff;
+      padding: 40px 20px;
+      margin: 2rem auto 0 auto;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+      max-width: 900px;
+      box-sizing: border-box;
+      text-align: center;
+    }
+
+    .location-section h2 {
+      color: #1a3d4c;
+      margin-bottom: 0.5rem;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .location-section p {
+      max-width: 700px;
+      margin: 0 auto 16px;
+      color: #2e3d49;
+      font-size: 1rem;
+    }
+
+    /* Stack the toggle and the permission text vertically */
+    .loc-toggle-container {
+      display:flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 6px;
+    }
+
+    .loc-toggle-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .loc-toggle {
+      width: 52px;
+      height: 30px;
+      position: relative;
+      display: inline-block;
+      flex: none;
+      cursor: pointer;
+      z-index: 1;
+      outline: none;
+    }
+    .loc-toggle input {
+      display: none;
+    }
+    /* slightly darker background so toggle looks clickable
+       Updated to include "No"/"Yes" labels and a separate knob element */
+    .loc-slider {
+      width: 100%;
+      height: 100%;
+      background: #e8f0f7; /* subtle bluish-gray */
+      border-radius: 20px;
+      position: relative;
+      transition: background 0.18s ease, box-shadow 0.18s ease, transform 0.12s ease;
+      border: 1px solid rgba(13,71,161,0.08);
+      box-sizing: border-box;
+      padding: 0 8px; /* spacing for labels */
+      display: inline-block;
+      vertical-align: middle;
+    }
+    .loc-slider:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 14px rgba(13,71,161,0.06);
+    }
+
+    /* left = "No", right = "Yes" labels */
+    .loc-slider::before,
+    .loc-slider::after {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 12px;
+      font-weight: 700;
+      color: rgba(46,61,73,0.75);
+      pointer-events: none;
+      transition: opacity 0.16s ease;
+    }
+    .loc-slider::before { content: "No"; left: 10px; opacity: 1; }
+    .loc-slider::after  { content: "Yes"; right: 10px; opacity: 0; }
+
+    /* knob as a child so pseudo elements can be used for labels */
+    .loc-knob {
+      position: absolute;
+      top: 50%;
+      left: 6px;
+      transform: translateY(-50%);
+      width: 22px;
+      height: 22px;
+      background: var(--white);
+      border-radius: 50%;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+      transition: left 0.18s ease, box-shadow 0.12s ease, transform 0.12s ease;
+      will-change: left;
+    }
+
+    /* Darker ON color to match CTA hover / more visible */
+    .loc-toggle input:checked + .loc-slider {
+      /* use the CTA normal color (not the hover/active color) */
+      background: var(--accent-blue);
+      box-shadow: 0 8px 22px rgba(90,160,210,0.18);
+    }
+    .loc-toggle input:checked + .loc-slider::before { opacity: 0; }
+    .loc-toggle input:checked + .loc-slider::after  { 
+      opacity: 1;
+      color: #fff; /* make "Yes" text white when ON */
+    }
+    .loc-toggle input:checked + .loc-slider .loc-knob {
+      left: calc(100% - 6px - 22px);
+    }
+
+    /* Permission text now sits below the toggle */
+    #loc-status {
+      font-size: 0.95rem;
+      color: var(--text-color);
+      font-weight: 600;
+      margin-top: 4px;
+      text-align: center;
+      min-width: 0;
+    }
+
+    .loc-toggle:focus-within .loc-slider {
+      box-shadow: 0 0 0 4px rgba(95,168,211,0.12);
+    }
+
+    @media (max-width: 560px) {
+      .loc-toggle-container { gap: 8px; }
+      .loc-toggle { width: 48px; height: 28px; }
+      .loc-slider::after { width: 18px; height: 18px; top: 4px; left: 4px; }
+      .loc-toggle input:checked + .loc-slider::after { transform: translateX(18px); }
+    }
+
+    /* Compact InfoWindow (callout) sizing to avoid internal scrolling on mobile */
+    .info-window-content {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      box-sizing: border-box;
+      min-width: 120px;
+      max-width: 200px; /* keep narrow so it fits mobile screens */
+      font-size: 0.92rem;
+      color: var(--text-color);
+      font-family: inherit;
+      word-break: break-word;
+      overflow: visible;
+    }
+    .info-window-content .iw-title {
+      font-weight: 700;
+      margin: 0;
+      font-size: 0.98rem;
+      color: var(--text-color);
+      line-height: 1.1;
+    }
+    .info-window-content .iw-route {
+      margin: 0;
+      font-size: 0.9rem;
+      color: rgba(46,61,73,0.9);
+    }
+    .info-window-button {
+      display: block;
+      width: 100%;
+      padding: 8px 10px;
+      background: var(--accent-blue);
+      color: #fff;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.88rem;
+      text-align: center;
+      box-sizing: border-box;
+    }
+    @media (max-width: 560px) {
+      .info-window-content { min-width: 110px; max-width: 170px; font-size: 0.88rem; gap: 4px; }
+      .info-window-content .iw-title { font-size: 0.95rem; }
+      .info-window-button { padding: 7px 8px; font-size: 0.85rem; }
+    }
   </style>
 </head>
 <body>
@@ -351,6 +537,22 @@
     <p>
       This is a placeholder hero section. Use this space to highlight important information, announcements, or a brief introduction for your members page.
     </p>
+  </section>
+
+  <!-- New: Location permission toggle (above map) -->
+  <section class="location-section" aria-label="location-permission">
+    <h2>Are you waiting?</h2>
+    <p>Clicking the toggle will allow this site to access your location.</p>
+
+    <div class="loc-toggle-container" role="group" aria-label="Location permission toggle">
+      <div class="loc-toggle-wrap">
+        <label class="loc-toggle" title="Share my location">
+          <input id="loc-toggle" type="checkbox" aria-label="Share my location" />
+          <span class="loc-slider" role="switch" aria-checked="false" tabindex="0"></span>
+        </label>
+      </div>
+      <div id="loc-status">Permission: unknown</div>
+    </div>
   </section>
 
   <div class="container">
@@ -432,65 +634,73 @@
     const app = initializeApp(firebaseConfig);
     const database = getDatabase(app);
 
-    const jeepneysRef = {
-      "jeepney1": ref(database, "jeepneys/jeepney1"),
-      "jeepney2": ref(database, "jeepneys/jeepney2"),
-      "jeepney3": ref(database, "jeepneys/jeepney3"),
-      "jeepney4": ref(database, "jeepneys/jeepney4"),
-      "jeepney5": ref(database, "jeepneys/jeepney5"),
-      "jeepney6": ref(database, "jeepneys/jeepney6"),
-      "jeepney7": ref(database, "jeepneys/jeepney7"),
-      "jeepney9": ref(database, "jeepneys/jeepney9") // Added testJeep
-    };
+    // Listen to the whole 'jeepneys' node so markers are created / removed dynamically
+    const jeepneysRootRef = ref(database, 'jeepneys');
 
-    function updateJeepneyData(jeepneyKey, data) {
-      if (data && window.markers[jeepneyKey]) {
-        const { latitude, longitude, route } = data;
-        const marker = window.markers[jeepneyKey];
-        marker.latestData = { latitude, longitude, route };
-        window.latestRoutes[jeepneyKey] = route;
-        if (latitude && longitude) {
-          const newPos = new google.maps.LatLng(latitude, longitude);
-          marker.setPosition(newPos);
+    onValue(jeepneysRootRef, (snapshot) => {
+      const all = snapshot.val() || {};
+
+      // Create or update markers for each jeepney in Firebase
+      for (const [key, val] of Object.entries(all)) {
+        // Accept both "latitude/longitude" and "lat/lng"
+        const latitude = val?.latitude ?? val?.lat ?? null;
+        const longitude = val?.longitude ?? val?.lng ?? null;
+        const route = val?.route ?? null;
+
+        if (latitude == null || longitude == null) {
+          // skip if no valid coords
+          continue;
         }
-        // If the infoWindow is open on this marker, update its content live
-        if (infoWindow.anchor === marker) {
-          infoWindow.setContent(generateInfoContent(jeepneyKey, marker));
-        }
-        // Re-filter markers if destination is selected
-        const dest = document.getElementById('to-select').value;
-        if (dest) {
-          if (route === dest) {
-            marker.setMap(map);
-          } else {
-            marker.setMap(null);
-          }
+
+        const latNum = Number(latitude);
+        const lngNum = Number(longitude);
+        if (Number.isNaN(latNum) || Number.isNaN(lngNum)) continue;
+
+        // Create marker if missing
+        if (!window.markers[key]) {
+          const marker = new google.maps.Marker({
+            position: { lat: latNum, lng: lngNum },
+            map,
+            title: window.jeepneyData[key]?.title || key
+          });
+          marker.latestData = { latitude: latNum, longitude: lngNum, route };
+          window.markers[key] = marker;
+          window.latestRoutes[key] = route;
+
+          marker.addListener("click", function () {
+            if (typeof window.generateInfoContent === "function") {
+              infoWindow.setContent(window.generateInfoContent(key, marker));
+            } else {
+              infoWindow.setContent(`<strong>${window.jeepneyData[key]?.title || key}</strong>`);
+            }
+            infoWindow.open(map, marker);
+          });
         } else {
-          marker.setMap(map);
+          // Update existing marker
+          const marker = window.markers[key];
+          const newPos = new google.maps.LatLng(latNum, lngNum);
+          marker.setPosition(newPos);
+          marker.latestData = { latitude: latNum, longitude: lngNum, route };
+          window.latestRoutes[key] = route;
+          if (infoWindow.anchor === marker) {
+            infoWindow.setContent(generateInfoContent(key, marker));
+          }
         }
       }
-    }
 
-    // Helper to generate infoWindow content using the latest Firebase data
-    function generateInfoContent(jeepneyKey, marker) {
-      const title = window.jeepneyData[jeepneyKey]?.title || jeepneyKey;
-      const link = window.jeepneyData[jeepneyKey]?.link || "#";
-      return `
-        <div style="font-size:1em; max-width:180px; padding:2px 0;">
-          <div style="font-weight:600; color:#1a3d4c; margin-bottom:8px; text-align:center;">${title}</div>
-          <div style="text-align:center;">
-            <button style="padding:6px 14px; font-size:1em; border-radius:5px; background:#5fa8d3; color:white; border:none; cursor:pointer;" onclick="window.location.href='${link}'">Go to ${title}</button>
-          </div>
-        </div>
-      `;
-    }
+      // Remove markers that are no longer present in Firebase
+      for (const key of Object.keys(window.markers)) {
+        if (!all.hasOwnProperty(key)) {
+          window.markers[key].setMap(null);
+          delete window.markers[key];
+          delete window.latestRoutes[key];
+        }
+      }
 
-    for (const key in jeepneysRef) {
-      onValue(jeepneysRef[key], (snapshot) => updateJeepneyData(key, snapshot.val()));
-    }
-
-    // Make generateInfoContent available globally for the map script
-    window.generateInfoContent = generateInfoContent;
+      // Apply current filter (if any)
+      const dest = document.getElementById('to-select')?.value;
+      if (dest !== undefined) filterMarkersByRoute(dest);
+    });
   </script>
 
   <!-- Google Maps and Markers (must be global for callback) -->
@@ -499,6 +709,9 @@
     let infoWindow;
     window.markers = {};
     window.latestRoutes = {}; // Store latest route for each jeepney
+    window.userMarker = null;
+    window.userLocationWatchId = null;
+    window.userLocationEnabled = false;
 
     function filterMarkersByRoute(route) {
       for (const [key, marker] of Object.entries(window.markers)) {
@@ -518,7 +731,8 @@
         center: { lat: 15.179446, lng: 120.04668 }
       });
 
-      infoWindow = new google.maps.InfoWindow();
+      // limit InfoWindow width so content remains compact (prevents internal scrolling)
+      infoWindow = new google.maps.InfoWindow({ maxWidth: 220 });
 
       // Use the global jeepneyData
       const jeepneyData = window.jeepneyData;
@@ -547,6 +761,156 @@
       // Add event listener for destination select
       document.getElementById('to-select').addEventListener('change', function () {
         filterMarkersByRoute(this.value);
+      });
+
+     // Initialize location permission controls now that map exists
+     try { setupUserLocationControls(); } catch (e) { console.warn("location controls init failed", e); }
+    }
+
+    // Location control helpers
+    function updateLocStatus(text) {
+      const el = document.getElementById('loc-status');
+      if (el) el.textContent = "Permission: " + text;
+    }
+    
+    // Restore info window content (includes a button/link for each jeepney)
+    function escapeHtml(str) {
+      return String(str || '').replace(/[&<>"'`=\/]/g, function (s) {
+        return {
+          '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;',
+          "'": '&#39;', '/': '&#x2F;', '`': '&#x60;', '=': '&#x3D;'
+        }[s];
+      });
+    }
+
+    function generateInfoContent(key, marker) {
+      const data = (window.jeepneyData && window.jeepneyData[key]) ? window.jeepneyData[key] : {};
+      const title = escapeHtml(data.title || key);
+      const route = escapeHtml(data.route || '');
+      const link = data.link ? escapeHtml(data.link) : '#';
+
+      // Return HTML string using responsive classes (smaller on mobile)
+      return `
+        <div class="info-window-content">
+          <div class="iw-title">${title}</div>
+          ${route ? `<div class="iw-route">Route: ${route}</div>` : ''}
+          <a class="info-window-button" href="${link}" target="_blank" rel="noopener">View details</a>
+        </div>
+      `;
+    }
+
+    function centerMapOnPosition(position, zoomWhenCenter = 14) {
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+      const latLng = { lat, lng };
+      map.setCenter(latLng);
+      map.setZoom(zoomWhenCenter);
+
+      if (!window.userMarker) {
+        window.userMarker = new google.maps.Marker({
+          position: latLng,
+          map,
+          title: "You",
+          optimized: false,
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 8,
+            fillColor: "#4285F4",
+            fillOpacity: 1,
+            strokeColor: "#ffffff",
+            strokeWeight: 2
+          }
+        });
+      } else {
+        window.userMarker.setPosition(latLng);
+        window.userMarker.setMap(map);
+      }
+    }
+
+    function enableLocationTracking() {
+      if (!navigator.geolocation) {
+        updateLocStatus("unsupported");
+        document.getElementById('loc-toggle').checked = false;
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          window.userLocationEnabled = true;
+          updateLocStatus("granted");
+          centerMapOnPosition(pos);
+          // start watching to update marker
+          if (window.userLocationWatchId == null) {
+            window.userLocationWatchId = navigator.geolocation.watchPosition(
+              (p) => centerMapOnPosition(p, map.getZoom()),
+              (err) => {
+                console.warn("watchPosition error", err);
+                if (err.code === err.PERMISSION_DENIED) {
+                  disableLocationTracking(true);
+                }
+              },
+              { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+            );
+          }
+        },
+        (err) => {
+          console.warn("getCurrentPosition error", err);
+          updateLocStatus(err.code === 1 ? "denied" : "error");
+          document.getElementById('loc-toggle').checked = false;
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    }
+
+    function disableLocationTracking(silent = false) {
+      window.userLocationEnabled = false;
+      if (window.userLocationWatchId != null) {
+        navigator.geolocation.clearWatch(window.userLocationWatchId);
+        window.userLocationWatchId = null;
+      }
+      if (window.userMarker) {
+        window.userMarker.setMap(null);
+      }
+      if (!silent) updateLocStatus("off");
+    }
+
+    function setupUserLocationControls() {
+      const checkbox = document.getElementById('loc-toggle');
+      const statusEl = document.getElementById('loc-status');
+      if (!checkbox || !statusEl) return;
+
+      // Reflect current permission state (if Permissions API available)
+      if (navigator.permissions && navigator.permissions.query) {
+        navigator.permissions.query({ name: 'geolocation' }).then((perm) => {
+          updateLocStatus(perm.state);
+          if (perm.state === 'granted') {
+            checkbox.checked = true;
+            enableLocationTracking();
+          } else {
+            checkbox.checked = false;
+          }
+          perm.onchange = function () {
+            updateLocStatus(perm.state);
+            if (perm.state === 'granted') {
+              checkbox.checked = true;
+              enableLocationTracking();
+            } else {
+              checkbox.checked = false;
+              disableLocationTracking(true);
+            }
+          };
+        }).catch(() => updateLocStatus('unknown'));
+      } else {
+        // Fallback if Permissions API not available
+        updateLocStatus('unknown');
+      }
+
+      checkbox.addEventListener('change', function () {
+        if (this.checked) {
+          enableLocationTracking();
+        } else {
+          disableLocationTracking();
+        }
       });
     }
   </script>
