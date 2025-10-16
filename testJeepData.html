@@ -279,6 +279,7 @@
     <h2>Current Data</h2>
     <ul class="data-list">
       <li><span>Current Coordinates:</span> <span id="coords">Loading...</span></li>
+      <li><span>Location:</span> <span id="location">Loading...</span></li>
       <li><span>Speed:</span> <span id="speed">Loading...</span></li>
       <li><span>Available Seats:</span> <span id="seats">Loading...</span></li>
       <li><span>Route:</span> <span id="route">Loading...</span></li>
@@ -292,46 +293,139 @@
   <footer>
     <p>© 2025 rEElax Solutions. All rights reserved.</p>
     <p><a href="#">Privacy Policy</a> | <a href="#">Terms</a></p>
+    <p style="font-size: 0.8em; text-align: center;">
+      Geocoding data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors
+    </p>
   </footer>
 
-  <script>
-    function toggleMenu() {
-      document.getElementById('navLinks').classList.toggle('show');
-    }
-  </script>
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+  // expose toggleMenu to the global scope (used by onclick in the nav)
+  window.toggleMenu = function() {
+    document.getElementById('navLinks').classList.toggle('show');
+  };
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyC7Y0vwDCa4j-PFSBMO4LMP3iBTE97D5sU",
-      authDomain: "jeepneytracking1.firebaseapp.com",
-      databaseURL: "https://jeepneytracking1-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "jeepneytracking1",
-      storageBucket: "jeepneytracking1.firebasestorage.app",
-      messagingSenderId: "999853984026",
-      appId: "1:999853984026:web:0cc9596c18f27b5fd744a3",
-      measurementId: "G-LWM8JJH3KW"
-    };
+  async function getAddress(lat, lng) {
+    try {
+      const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}&zoom=18&addressdetails=1`;
+      const resp = await fetch(url, {
+        headers: {
+          // Note: browsers block setting User-Agent. Nominatim accepts identification via query or Referer.
+          'Accept-Language': 'en'
+        }
+      });
+      const data = await resp.json();
+      return data && data.display_name ? data.display_name : `${lat}, ${lng}`;
+    } catch (err) {
+      console.error('Geocoding error:', err);
+      return `${lat}, ${lng}`;
+    }
+  }
 
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+  import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
-    // Listen to jeepney9 data
-    const jeepneyRef = ref(db, "jeepneys/jeepney9");
-    onValue(jeepneyRef, (snapshot) => {
-      const data = snapshot.val();
-      document.getElementById("coords").textContent =
-        data && data.latitude && data.longitude
-          ? `${data.latitude}, ${data.longitude}`
-          : "N/A";
-      document.getElementById("speed").textContent =
-        data && data.speed ? `${data.speed} km/h` : "N/A";
-      document.getElementById("seats").textContent =
-        data && data.availableSeats ? data.availableSeats : "N/A";
-      document.getElementById("route").textContent =
-        data && data.route ? data.route : "N/A";
-    });
-  </script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyC7Y0vwDCa4j-PFSBMO4LMP3iBTE97D5sU",
+    authDomain: "jeepneytracking1.firebaseapp.com",
+    databaseURL: "https://jeepneytracking1-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "jeepneytracking1",
+    storageBucket: "jeepneytracking1.firebasestorage.app",
+    messagingSenderId: "999853984026",
+    appId: "1:999853984026:web:0cc9596c18f27b5fd744a3",
+    measurementId: "G-LWM8JJH3KW"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  const coordsEl = document.getElementById('coords');
+  const locationEl = document.getElementById('location');
+  const speedEl = document.getElementById('speed');
+  const seatsEl = document.getElementById('seats');
+  const routeEl = document.getElementById('route');
+  
+  // Keep last geocoded coords to avoid redundant reverse lookups
+  let lastLat = null;
+  let lastLng = null;
+  let lastAddress = null;
+
+  const jeepneyRef = ref(db, "jeepneys/jeepney9");
+  onValue(jeepneyRef, async (snapshot) => {
+    const data = snapshot.val();
+
+    // reset/display defaults first
+    coordsEl.textContent = 'Loading...';
+    locationEl.textContent = 'Loading...';
+    speedEl.textContent = 'Loading...';
+    seatsEl.textContent = 'Loading...';
+    routeEl.textContent = 'Loading...';
+
+    if (!data) {
+      coordsEl.textContent = 'N/A';
+      locationEl.textContent = 'N/A';
+      speedEl.textContent = 'N/A';
+      seatsEl.textContent = 'N/A';
+      routeEl.textContent = 'N/A';
+      return;
+    }
+
+    // Coordinates & Location (reverse geocode when coords change)
+    if (data.latitude !== undefined && data.longitude !== undefined) {
+      const lat = data.latitude;
+      const lng = data.longitude;
+      const coordsStr = `${lat}, ${lng}`;
+      coordsEl.textContent = coordsStr; // show coords immediately
+
+      if (lat !== lastLat || lng !== lastLng || !lastAddress) {
+        // update last coords and fetch address
+        lastLat = lat;
+        lastLng = lng;
+        lastAddress = null;
+        // indicate we're resolving the address
+        locationEl.textContent = 'Loading...';
+        try {
+          const address = await getAddress(lat, lng);
+          lastAddress = address;
+          // keep coordinates separate; show address in its own field
+          locationEl.textContent = address || 'N/A';
+        } catch (err) {
+          // if geocode fails, keep plain coords (already set)
+          console.error('Reverse geocode failed:', err);
+          locationEl.textContent = coordsStr;
+        }
+      } else if (lastAddress) {
+        // coords already shown; reuse cached address
+        locationEl.textContent = lastAddress;
+      }
+    } else {
+      coordsEl.textContent = 'N/A';
+      locationEl.textContent = 'N/A';
+    }
+    
+    // Speed
+    if (data.speed !== undefined && data.speed !== null) {
+      speedEl.textContent = data.speed;
+    } else {
+      speedEl.textContent = 'N/A';
+    }
+    
+    // Available seats
+    if (data.seats !== undefined && data.seats !== null) {
+      seatsEl.textContent = data.seats;
+    } else if (data.availableSeats !== undefined) {
+      // handle alternate key name if present
+      seatsEl.textContent = data.availableSeats;
+    } else {
+      seatsEl.textContent = 'N/A';
+    }
+    
+    // Route
+    if (data.route) {
+      routeEl.textContent = data.route;
+    } else {
+      routeEl.textContent = 'N/A';
+    }
+  });
+</script>
 </body>
 </html>
