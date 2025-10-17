@@ -665,7 +665,7 @@
   <!-- Firebase Integration -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import { getDatabase, ref, onValue, set, serverTimestamp, onDisconnect } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyC7Y0vwDCa4j-PFSBMO4LMP3iBTE97D5sU",
@@ -679,88 +679,127 @@
 
     const app = initializeApp(firebaseConfig);
     const database = getDatabase(app);
-
-    // Create a reference for waiting users
     const waitingUsersRef = ref(database, 'waitingUsers');
-
-    // Function to update waiting area
-    function updateWaitingArea(position) {
-      if (!position || !position.coords) return;
-
-      const userLat = position.coords.latitude;
-      const userLng = position.coords.longitude;
-      const userId = Math.random().toString(36).substr(2, 9);
-
-      // Add user location to Firebase
-      set(ref(database, `waitingUsers/${userId}`), {
-        latitude: userLat,
-        longitude: userLng,
-        timestamp: serverTimestamp()
-      });
-
-      // Remove user location when they disconnect
-      onDisconnect(ref(database, `waitingUsers/${userId}`)).remove();
-    }
 
     // Listen for changes in waiting users
     onValue(waitingUsersRef, (snapshot) => {
-      const waitingUsers = snapshot.val();
-      if (!waitingUsers) return;
-
-      // Reset all counts
+      const waitingUsers = snapshot.val() || {};
+      
+      // Reset all area counts
       Object.values(window.barangayAreas).forEach(area => {
         area.waitingCount = 0;
       });
 
-      // Count users within each area
+      // Count users in each area
       Object.values(waitingUsers).forEach(user => {
         const userLatLng = new google.maps.LatLng(user.latitude, user.longitude);
 
-        Object.entries(window.barangayAreas).forEach(([areaName, areaData]) => {
-          const areaCenter = new google.maps.LatLng(areaData.lat, areaData.lng);
+        Object.entries(window.barangayAreas).forEach(([areaName, area]) => {
+          const areaCenter = new google.maps.LatLng(area.lat, area.lng);
           const distance = google.maps.geometry.spherical.computeDistanceBetween(
             userLatLng,
             areaCenter
           );
 
-          if (distance <= areaData.radius) {
-            areaData.waitingCount++;
-            // Update the label
+          if (distance <= area.radius) {
+            area.waitingCount++;
             const label = window.barangayLabels[areaName];
             if (label && label.element) {
-              label.element.textContent = areaData.waitingCount;
+              label.element.textContent = area.waitingCount.toString();
             }
           }
         });
       });
     });
 
-    // Make updateWaitingArea available globally
-    window.updateWaitingArea = updateWaitingArea;
-  </script>
+    // Function to update waiting user's position
+    function updateUserLocation(position) {
+      if (!position || !position.coords) return;
+      
+      const userId = localStorage.getItem('waitingUserId') || 
+                    'user_' + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem('waitingUserId', userId);
 
-  <!-- Firebase Presence Tracking -->
-  <script type="module">
-    import { getDatabase, ref, onValue, onDisconnect, set, serverTimestamp, remove } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+      const userRef = ref(database, `waitingUsers/${userId}`);
+      set(userRef, {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        timestamp: serverTimestamp()
+      });
 
-    // Use the same Firebase config and app as above
-    const database = getDatabase();
+      onDisconnect(userRef).remove();
+    }
 
-    // Reference for connections
-    const connectionsRef = ref(database, 'connections');
-    const thisConnectionRef = ref(database, `connections/${Math.random().toString(36).substr(2, 9)}`);
+    // Make function available globally
+    window.updateUserLocation = updateUserLocation;
 
-    // Add this device to the connections list
-    set(thisConnectionRef, { connectedAt: serverTimestamp() });
+    // Listen to the whole 'jeepneys' node so markers are created / removed dynamically
+    const jeepneysRootRef = ref(database, 'jeepneys');
 
-    // Listen for changes in the number of connections
-    onValue(connectionsRef, (snapshot) => {
-      const count = snapshot.exists() ? snapshot.size : 0;
-      document.getElementById('onlineCount').textContent = count;
+    onValue(jeepneysRootRef, (snapshot) => {
+      const all = snapshot.val() || {};
+
+      // Create or update markers for each jeepney in Firebase
+      for (const [key, val] of Object.entries(all)) {
+        // Accept both "latitude/longitude" and "lat/lng"
+        const latitude = val?.latitude ?? val?.lat ?? null;
+        const longitude = val?.longitude ?? val?.lng ?? null;
+        const route = val?.route ?? null;
+
+        if (latitude == null || longitude == null) {
+          // skip if no valid coords
+          continue;
+        }
+
+        const latNum = Number(latitude);
+        const lngNum = Number(longitude);
+        if (Number.isNaN(latNum) || Number.isNaN(lngNum)) continue;
+
+        // Create marker if missing
+        if (!window.markers[key]) {
+          const marker = new google.maps.Marker({
+            position: { lat: latNum, lng: lngNum },
+            map,
+            title: window.jeepneyData[key]?.title || key
+          });
+          marker.latestData = { latitude: latNum, longitude: lngNum, route };
+          window.markers[key] = marker;
+          window.latestRoutes[key] = route;
+
+          marker.addListener("click", function () {
+            if (typeof window.generateInfoContent === "function") {
+              infoWindow.setContent(window.generateInfoContent(key, marker));
+            } else {
+              infoWindow.setContent(`<strong>${window.jeepneyData[key]?.title || key}</strong>`);
+            }
+            infoWindow.open(map, marker);
+          });
+        } else {
+          // Update existing marker
+          const marker = window.markers[key];
+          const newPos = new google.maps.LatLng(latNum, lngNum);
+          marker.setPosition(newPos);
+          marker.latestData = { latitude: latNum, longitude: lngNum, route };
+          window.latestRoutes[key] = route;
+          if (infoWindow.anchor === marker) {
+            infoWindow.setContent(generateInfoContent(key, marker));
+          }
+        }
+      }
+
+      // Remove markers that are no longer present in Firebase
+      for (const key of Object.keys(window.markers)) {
+        if (!all.hasOwnProperty(key)) {
+          window.markers[key].setMap(null);
+          delete window.markers[key];
+          delete window.latestRoutes[key];
+        }
+      }
+
+      // Apply current filter (if any)
+      const dest = document.getElementById('to-select')?.value;
+      if (dest !== undefined) filterMarkersByRoute(dest);
     });
-
-    // Remove this device when disconnected
-    onDisconnect(thisConnectionRef).remove();
   </script>
 
   <!-- Google Maps and Markers (must be global for callback) -->
@@ -791,6 +830,10 @@
       'BOT02': { lat: 15.22454, lng: 120.02033, radius: 500, waitingCount: 0 },
       'BOT03': { lat: 15.23212, lng: 120.01576, radius: 500, waitingCount: 0 }
     };
+
+    // Store circle overlays and labels
+    window.barangayCircles = {};
+    window.barangayLabels = {};
 
     function filterMarkersByRoute(route) {
       for (const [key, marker] of Object.entries(window.markers)) {
@@ -933,14 +976,13 @@
           window.userLocationEnabled = true;
           updateLocStatus("granted");
           centerMapOnPosition(pos);
-          window.updateWaitingArea(pos); // Update waiting area when location is first granted
+          window.updateUserLocation(pos); // Add this line
 
-          // Start watching to update marker and waiting area
           if (window.userLocationWatchId == null) {
             window.userLocationWatchId = navigator.geolocation.watchPosition(
               (position) => {
                 centerMapOnPosition(position, false);
-                window.updateWaitingArea(position); // Update waiting area when location changes
+                window.updateUserLocation(position); // Add this line
               },
               (err) => {
                 console.warn("watchPosition error", err);
@@ -1034,8 +1076,7 @@
           center: { lat: data.lat, lng: data.lng },
           radius: data.radius
         });
-        circle.setVisible(false); // Initially hidden
-        
+
         // Create label overlay
         const labelDiv = document.createElement('div');
         labelDiv.className = 'waiting-count-label';
@@ -1062,7 +1103,7 @@
 
         window.barangayCircles[name] = circle;
         window.barangayLabels[name] = { overlay: customOverlay, element: labelDiv };
-        customOverlay.setMap(null); // Initially hidden
+        customOverlay.setMap(map);
       });
     }
 
@@ -1093,45 +1134,31 @@
     }
 
     // Modify the existing enableLocationTracking function to include waiting area updates
-    function enableLocationTracking() {
-      if (!navigator.geolocation) {
-        updateLocStatus("unsupported");
-        document.getElementById('loc-toggle').checked = false;
-        return;
+    const originalEnableLocationTracking = enableLocationTracking;
+    enableLocationTracking = function() {
+      originalEnableLocationTracking();
+      if (!window.waitingAreasInitialized) {
+        createWaitingAreas();
+        window.waitingAreasInitialized = true;
       }
-
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          window.userLocationEnabled = true;
-          updateLocStatus("granted");
-          centerMapOnPosition(pos);
-          window.updateWaitingArea(pos); // Update waiting area when location is first granted
-
-          // Start watching to update marker and waiting area
-          if (window.userLocationWatchId == null) {
-            window.userLocationWatchId = navigator.geolocation.watchPosition(
-              (position) => {
-                centerMapOnPosition(position, false);
-                window.updateWaitingArea(position); // Update waiting area when location changes
-              },
-              (err) => {
-                console.warn("watchPosition error", err);
-                if (err.code === err.PERMISSION_DENIED) {
-                  disableLocationTracking(true);
-                }
-              },
-              { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
-            );
-          }
-        },
-        (err) => {
-          console.warn("getCurrentPosition error", err);
-          updateLocStatus(err.code === 1 ? "denied" : "error");
-          document.getElementById('loc-toggle').checked = false;
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-      );
-    }
+      
+      // Update waiting counts when user location changes
+      if (window.userLocationWatchId == null) {
+        window.userLocationWatchId = navigator.geolocation.watchPosition(
+          (position) => {
+            centerMapOnPosition(position, false);
+            updateWaitingCounts(position);
+          },
+          (err) => {
+            console.warn("watchPosition error", err);
+            if (err.code === err.PERMISSION_DENIED) {
+              disableLocationTracking(true);
+            }
+          },
+          { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+        );
+      }
+    };
 
     // Add in your existing script section
     document.getElementById('waiting-areas-toggle').addEventListener('change', function(e) {
@@ -1214,6 +1241,30 @@
         });
       });
     });
+  </script>
+
+  <!-- Firebase Presence Tracking -->
+  <script type="module">
+    import { getDatabase, ref, onValue, onDisconnect, set, serverTimestamp, remove } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+    // Use the same Firebase config and app as above
+    const database = getDatabase();
+
+    // Reference for connections
+    const connectionsRef = ref(database, 'connections');
+    const thisConnectionRef = ref(database, `connections/${Math.random().toString(36).substr(2, 9)}`);
+
+    // Add this device to the connections list
+    set(thisConnectionRef, { connectedAt: serverTimestamp() });
+
+    // Listen for changes in the number of connections
+    onValue(connectionsRef, (snapshot) => {
+      const count = snapshot.exists() ? snapshot.size : 0;
+      document.getElementById('onlineCount').textContent = count;
+    });
+
+    // Remove this device when disconnected
+    onDisconnect(thisConnectionRef).remove();
   </script>
 </body>
 </html>
