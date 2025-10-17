@@ -1,0 +1,1296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>JeepnEE Mapping</title>
+  <meta name="description" content="JeepnEE – Real-time jeepney tracking and monitoring.">
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-teal: #4db6ac;
+      --accent-blue: #5fa8d3;
+      --light-bg: #f0fdfc;
+      --alt-bg: #e0f7fa;
+      --text-color: #2e3d49;
+      --white: #ffffff;
+      --light-gray: #f1f1f1;
+      --cta-hover-blue: #0d47a1;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Match index.html */
+      color: var(--text-color);
+      background-color: var(--white);
+    }
+
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background-color: var(--primary-teal);
+      z-index: 1000;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 20px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .logo-img {
+      height: 30px;
+      margin-right: 10px;
+    }
+
+    .logo-text {
+      font-size: 20px; /* Fixed size for consistency */
+      font-weight: bold;
+      color: white;
+      text-decoration: none;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 20px;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: white;
+      font-weight: 500;
+      padding: 5px 10px;
+      border-radius: 5px;
+      transition: background-color 0.3s ease;
+    }
+
+    .nav-links a:hover {
+      background-color: #00897b;
+    }
+
+    .menu-toggle {
+      display: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: white;
+      z-index: 1001;
+      transition: color 0.3s ease;
+    }
+
+    .menu-toggle:hover,
+    .menu-toggle:active {
+      color: var(--cta-hover-blue);
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto 2rem;  /* Remove top margin, keep bottom margin for gap below map */
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+      padding: 2rem;
+    }
+
+    h2 {
+      color: #1a3d4c;
+      margin-bottom: 1rem;
+      font-size: 1.5rem;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    #map {
+      width: 100%;
+      height: 750px; /* 150% of the original 500px */
+      border-radius: 10px;
+      border: 1px solid #e0e0e0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      margin-bottom: 1rem;
+    }
+
+    button {
+      padding: 10px 20px;
+      background-color: var(--accent-blue);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: var(--cta-hover-blue);
+    }
+
+    section#contact {
+      background-color: var(--white);
+      padding: 60px 20px;
+      margin-top: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+      max-width: 900px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    section#contact h2 {
+      color: #1a3d4c;
+      margin-bottom: 1rem;
+      font-size: 1.5rem;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    section#contact p {
+      max-width: 800px;
+      margin: 0 auto 20px;
+      text-align: center;
+    }
+
+    footer {
+      background-color: var(--primary-teal);
+      color: white;
+      text-align: center;
+      padding: 30px 20px;
+      font-size: 14px;
+      margin-top: 2rem;
+    }
+
+    footer a {
+      color: white;
+      text-decoration: underline;
+    }
+
+    .hero {
+      background-image: url('herobannerlight.png');
+      background-position: 75% center;
+      background-size: cover;
+      background-repeat: no-repeat;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      /* center content vertically within the hero height */
+      justify-content: center;
+      /* center text horizontally as well */
+      align-items: center;
+      text-align: center;
+      min-height: 200px;   /* reduced from 400px to 200px (half height) */
+      /* reduce extra padding so centering is consistent */
+      padding: 20px;
+      border-radius: 0;
+      margin-top: 60px;      /* space below nav */
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+    }
+
+    /* Make gap below hero same as other section gaps */
+    .hero {
+      margin-bottom: 2rem; /* If your sections use 2rem, keep this. If they use a different value, match it here. */
+    }
+
+    @media (max-width: 768px) {
+      .nav-links {
+        display: none;
+        position: absolute;
+        top: 60px;
+        right: 20px;
+        flex-direction: column;
+        background-color: var(--primary-teal);
+        border: 1px solid #ddd;
+        padding: 10px 20px;
+        border-radius: 5px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+      }
+
+      .nav-links.show {
+        display: flex;
+      }
+
+      .menu-toggle {
+        display: block;
+      }
+
+      .container {
+        padding: 1rem;
+      }
+
+      #map {
+        height: 450px; /* 150% of the original mobile 300px */
+      }
+
+      section#contact {
+        padding: 30px 10px;
+      }
+    }
+
+    /* Help Us Section */
+    .help-section {
+      background: #fff; /* Match other sections */
+      padding: 40px 20px;
+      margin: 2rem auto 0 auto;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+      max-width: 900px;
+    }
+    .help-section h2 {
+      color: #1a3d4c;
+      margin-bottom: 1rem;
+      font-size: 1.5rem;
+      font-weight: 600;
+      text-align: center;
+    }
+    .help-section p {
+      max-width: 700px;
+      margin: 0 auto 20px;
+      text-align: center;
+      color: #2e3d49;
+      font-size: 1.1em;
+    }
+    .cta-button {
+      display: inline-block;
+      padding: 10px 24px;
+      background-color: var(--accent-blue);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background-color 0.3s;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .cta-button:hover {
+      background-color: var(--cta-hover-blue);
+    }
+
+    /* New: location permission UI */
+    .location-section {
+      background: #fff;
+      padding: 40px 20px;
+      margin: 2rem auto 0 auto;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+      max-width: 900px;
+      box-sizing: border-box;
+      text-align: center;
+    }
+
+    .location-section h2 {
+      color: #1a3d4c;
+      margin-bottom: 0.5rem;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .location-section p {
+      max-width: 700px;
+      margin: 0 auto 16px;
+      color: #2e3d49;
+      font-size: 1rem;
+    }
+
+    /* Stack the toggle and the permission text vertically */
+    .loc-toggle-container {
+      display:flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 6px;
+    }
+
+    .loc-toggle-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .loc-toggle {
+      width: 52px;
+      height: 30px;
+      position: relative;
+      display: inline-block;
+      flex: none;
+      cursor: pointer;
+      z-index: 1;
+      outline: none;
+    }
+    .loc-toggle input {
+      display: none;
+    }
+    /* slightly darker background so toggle looks clickable
+       Updated to include "No"/"Yes" labels and a separate knob element */
+    .loc-slider {
+      width: 100%;
+      height: 100%;
+      background: #e8f0f7; /* subtle bluish-gray */
+      border-radius: 20px;
+      position: relative;
+      transition: background 0.18s ease, box-shadow 0.18s ease, transform 0.12s ease;
+      border: 1px solid rgba(13,71,161,0.08);
+      box-sizing: border-box;
+      padding: 0 8px; /* spacing for labels */
+      display: inline-block;
+      vertical-align: middle;
+    }
+    .loc-slider:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 14px rgba(13,71,161,0.06);
+    }
+
+    /* left = "No", right = "Yes" labels */
+    .loc-slider::before,
+    .loc-slider::after {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 12px;
+      font-weight: 700;
+      color: rgba(46,61,73,0.75);
+      pointer-events: none;
+      transition: opacity 0.16s ease;
+    }
+    .loc-slider::before { content: "No"; left: 10px; opacity: 1; }
+    .loc-slider::after  { content: "Yes"; right: 10px; opacity: 0; }
+
+    /* knob as a child so pseudo elements can be used for labels */
+    .loc-knob {
+      position: absolute;
+      top: 50%;
+      left: 6px;
+      transform: translateY(-50%);
+      width: 22px;
+      height: 22px;
+      background: var(--white);
+      border-radius: 50%;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+      transition: left 0.18s ease, box-shadow 0.12s ease, transform 0.12s ease;
+      will-change: left;
+    }
+
+    /* Darker ON color to match CTA hover / more visible */
+    .loc-toggle input:checked + .loc-slider {
+      /* use the CTA normal color (not the hover/active color) */
+      background: var(--accent-blue);
+      box-shadow: 0 8px 22px rgba(90,160,210,0.18);
+    }
+    .loc-toggle input:checked + .loc-slider::before { opacity: 0; }
+    .loc-toggle input:checked + .loc-slider::after  { 
+      opacity: 1;
+      color: #fff; /* make "Yes" text white when ON */
+    }
+    .loc-toggle input:checked + .loc-slider .loc-knob {
+      left: calc(100% - 6px - 22px);
+    }
+
+    /* Permission text now sits below the toggle */
+    #loc-status {
+      font-size: 0.95rem;
+      color: var(--text-color);
+      font-weight: 600;
+      margin-top: 4px;
+      text-align: center;
+      min-width: 0;
+    }
+
+    .loc-toggle:focus-within .loc-slider {
+      box-shadow: 0 0 0 4px rgba(95,168,211,0.12);
+    }
+
+    @media (max-width: 560px) {
+      .loc-toggle-container { gap: 8px; }
+      .loc-toggle { width: 48px; height: 28px; }
+      .loc-slider::after { width: 18px; height: 18px; top: 4px; left: 4px; }
+      .loc-toggle input:checked + .loc-slider::after { transform: translateX(18px); }
+    }
+
+    /* Waiting area styles */
+    .waiting-count-label {
+      position: absolute;
+      background: white;
+      border: 2px solid #FF6B6B;
+      border-radius: 50%;
+      color: #333;
+      font-weight: bold;
+      padding: 8px;
+      min-width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      z-index: 1000;
+      pointer-events: none;
+    }
+
+    /* Add inside the existing <style> tag */
+    .overlay-toggle-container {
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .overlay-toggle {
+      position: relative;
+      display: inline-block;
+      width: 60px;
+      height: 34px;
+    }
+
+    .overlay-toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .overlay-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 34px;
+    }
+
+    .overlay-slider:before {
+      position: absolute;
+      content: "";
+      height: 26px;
+      width: 26px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+
+    input:checked + .overlay-slider {
+      background-color: var(--primary-color);
+    }
+
+    input:checked + .overlay-slider:before {
+      transform: translateX(26px);
+    }
+
+    /* New styles for waiting areas toggle */
+    .toggle-container {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    .toggle {
+      position: relative;
+      width: 60px;
+      height: 34px;
+      background-color: #ccc;
+      border-radius: 34px;
+      transition: background-color 0.4s;
+    }
+
+    .toggle-button {
+      position: absolute;
+      top: 50%;
+      left: 4px;
+      width: 26px;
+      height: 26px;
+      background-color: white;
+      border-radius: 50%;
+      transition: transform 0.4s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: #333;
+      font-size: 0.8rem;
+    }
+
+    /* Checked state styles */
+    #waiting-areas-toggle.checked {
+      background-color: var(--primary-color);
+    }
+    #waiting-areas-toggle.checked .toggle-button {
+      transform: translateX(26px);
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <!-- Make jeepneyData global -->
+  <script>
+    window.jeepneyData = {
+      "jeepney1": { lat: 15.179446, lng: 120.04668, title: "Allejos", link: "jeepney1.html", route: "San Felipe" },
+      "jeepney2": { lat: 15.1805, lng: 120.0446, title: "Barrion", link: "jeepney2.html", route: "Cabangan" },
+      "jeepney3": { lat: 15.15888, lng: 120.0554, title: "Canona", link: "jeepney3.html", route: "Botolan" },
+      "jeepney4": { lat: 15.17, lng: 120.0446, title: "Deboma", link: "jeepney4.html", route: "Iba" },
+      "jeepney5": { lat: 15.18, lng: 120.0446, title: "Dolojan", link: "jeepney5.html", route: "San Felipe" },
+      "jeepney6": { lat: 15.19, lng: 120.0446, title: "Ora", link: "jeepney6.html", route: "Cabangan" },
+      "jeepney7": { lat: 15.20, lng: 120.0446, title: "Salazar", link: "jeepney7.html", route: "Botolan" },
+      "jeepney9": { lat: 15.205, lng: 120.05, title: "testJeep", link: "testJeepData.html", route: "Iba" }
+    };
+  </script>
+
+  <nav>
+    <a href="index.html" class="logo-container">
+      <img src="logo-white.png" alt="rEElax Logo" class="logo-img" />
+      <span class="logo-text">rEElax Solutions</span>
+    </a>
+    <div class="menu-toggle" onclick="toggleMenu()">☰</div>
+    <div class="nav-links" id="navLinks">
+      <a href="index.html#services">Services</a>
+      <a href="index.html#about">About</a>
+      <a href="index.html#mission">Mission</a>
+      <a href="index.html#vision">Vision</a>
+      <a href="index.html#contact">Contact</a>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <h1>Welcome to JeepnEE Members</h1>
+    <p>
+      This is a placeholder hero section. Use this space to highlight important information, announcements, or a brief introduction for your members page.
+    </p>
+  </section>
+
+  <!-- New: Location permission toggle (above map) -->
+  <section class="location-section" aria-label="location-permission">
+    <h2>Are you waiting?</h2>
+    <p>Clicking the toggle will allow this site to access your location.</p>
+
+    <div class="loc-toggle-container" role="group" aria-label="Location permission toggle">
+      <div class="loc-toggle-wrap">
+        <label class="loc-toggle" title="Share my location">
+          <input id="loc-toggle" type="checkbox" aria-label="Share my location" />
+          <span class="loc-slider" role="switch" aria-checked="false" tabindex="0"></span>
+        </label>
+      </div>
+      <div id="loc-status">Permission: unknown</div>
+    </div>
+  </section>
+
+  <div class="container">
+    <h2>JeepnEE Real-Time Map</h2>
+    <div id="map"></div>
+    <!-- Replace both the dropdown and waiting areas sections with this -->
+    <div class="location-section" style="margin-top: 10px;">
+      <div style="display: flex; flex-direction: column; gap: 15px; max-width: 400px; margin: 0 auto;">
+        <!-- Destination dropdown -->
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <p style="margin: 0;">Select Destination</p>
+          <div style="width: 200px;">
+            <select id="to-select" style="width: 100%; padding: 8px; border-radius: 5px; border: 1px solid #ccc;">
+              <option value="">Select destination</option>
+              <option value="San Felipe">San Felipe</option>
+              <option value="Cabangan">Cabangan</option>
+              <option value="Botolan">Botolan</option>
+              <option value="Iba">Iba</option>
+            </select>
+          </div>
+        </div>
+        
+        <!-- Waiting areas toggle -->
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <p style="margin: 0;">Show Waiting Areas</p>
+          <div class="loc-toggle-container">
+            <div class="loc-toggle-wrap">
+              <label class="loc-toggle" title="Show waiting areas">
+                <input id="waiting-areas-toggle" type="checkbox" aria-label="Show waiting areas" />
+                <span class="loc-slider" role="switch" aria-checked="false" tabindex="0"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <button onclick="window.location.href='index.html'">Back to Index</button>
+  </div>
+
+  <!-- Online Devices Section -->
+  <section id="online-devices" style="background: #fff; padding: 40px 20px; margin: 2rem auto 0 auto; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.07); max-width: 900px;">
+    <h2>Currently Online Devices</h2>
+    <p style="font-size:1.5em; text-align:center;">
+      <span id="onlineCount">Loading...</span> device(s) online
+    </p>
+  </section>
+  
+  <!-- Help Us Section -->
+  <section class="help-section" style="background: #fff;">
+    <h2>Help us!</h2>
+    <p>x
+      We are currently conducting research to improve JeepnEE. Your feedback is valuable to us! Please let us know your thoughts and suggestions about this project.
+    </p>
+    <div style="text-align:center;">
+      <a href="https://docs.google.com/forms/d/e/1FAIpQLSfuFGOwicdSC6zuPfI1co0c55tmtsbDrxiFX4Z-2hEdNUdxuw/viewform" target="_blank" class="cta-button">Give Feedback</a>
+    </div>
+  </section>
+
+  <section id="contact">
+    <h2>Contact Us</h2>
+    <p>Email: <a href="mailto:reelax.solutions@gmail.com">reelax.solutions@gmail.com</a></p>
+    <p>Phone: +63 912 345 6789</p>
+  </section>
+
+  <footer>
+    <p>© 2025 rEElax Solutions. All rights reserved.</p>
+    <p><a href="#">Privacy Policy</a> | <a href="#">Terms</a></p>
+  </footer>
+
+  <!-- Google Maps API -->
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDjEkI9duxMBLHWzrZeAmkWP8IlQCyLPmE&libraries=geometry&callback=initMap"></script>
+
+  <!-- Firebase Integration -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyC7Y0vwDCa4j-PFSBMO4LMP3iBTE97D5sU",
+      authDomain: "jeepneytracking1.firebaseapp.com",
+      databaseURL: "https://jeepneytracking1-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "jeepneytracking1",
+      storageBucket: "jeepneytracking1.appspot.com",
+      messagingSenderId: "999853984026",
+      appId: "1:999853984026:web:0cc9596c18f27b5fd744a3"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+
+    // Listen to the whole 'jeepneys' node so markers are created / removed dynamically
+    const jeepneysRootRef = ref(database, 'jeepneys');
+
+    onValue(jeepneysRootRef, (snapshot) => {
+      const all = snapshot.val() || {};
+
+      // Create or update markers for each jeepney in Firebase
+      for (const [key, val] of Object.entries(all)) {
+        // Accept both "latitude/longitude" and "lat/lng"
+        const latitude = val?.latitude ?? val?.lat ?? null;
+        const longitude = val?.longitude ?? val?.lng ?? null;
+        const route = val?.route ?? null;
+
+        if (latitude == null || longitude == null) {
+          // skip if no valid coords
+          continue;
+        }
+
+        const latNum = Number(latitude);
+        const lngNum = Number(longitude);
+        if (Number.isNaN(latNum) || Number.isNaN(lngNum)) continue;
+
+        // Create marker if missing
+        if (!window.markers[key]) {
+          const marker = new google.maps.Marker({
+            position: { lat: latNum, lng: lngNum },
+            map,
+            title: window.jeepneyData[key]?.title || key
+          });
+          marker.latestData = { latitude: latNum, longitude: lngNum, route };
+          window.markers[key] = marker;
+          window.latestRoutes[key] = route;
+
+          marker.addListener("click", function () {
+            if (typeof window.generateInfoContent === "function") {
+              infoWindow.setContent(window.generateInfoContent(key, marker));
+            } else {
+              infoWindow.setContent(`<strong>${window.jeepneyData[key]?.title || key}</strong>`);
+            }
+            infoWindow.open(map, marker);
+          });
+        } else {
+          // Update existing marker
+          const marker = window.markers[key];
+          const newPos = new google.maps.LatLng(latNum, lngNum);
+          marker.setPosition(newPos);
+          marker.latestData = { latitude: latNum, longitude: lngNum, route };
+          window.latestRoutes[key] = route;
+          if (infoWindow.anchor === marker) {
+            infoWindow.setContent(generateInfoContent(key, marker));
+          }
+        }
+      }
+
+      // Remove markers that are no longer present in Firebase
+      for (const key of Object.keys(window.markers)) {
+        if (!all.hasOwnProperty(key)) {
+          window.markers[key].setMap(null);
+          delete window.markers[key];
+          delete window.latestRoutes[key];
+        }
+      }
+
+      // Apply current filter (if any)
+      const dest = document.getElementById('to-select')?.value;
+      if (dest !== undefined) filterMarkersByRoute(dest);
+    });
+
+    // Create a reference for waiting users
+    const waitingUsersRef = ref(database, 'waitingUsers');
+
+    // Modify the location tracking code to update waiting areas
+    function updateWaitingArea(position) {
+      if (!position || !position.coords) return;
+
+      const userLat = position.coords.latitude;
+      const userLng = position.coords.longitude;
+      const userId = Math.random().toString(36).substr(2, 9); // Generate unique ID for user
+
+      // Add user location to Firebase
+      set(ref(database, `waitingUsers/${userId}`), {
+        latitude: userLat,
+        longitude: userLng,
+        timestamp: serverTimestamp()
+      });
+
+      // Remove user location when they disconnect
+      onDisconnect(ref(database, `waitingUsers/${userId}`)).remove();
+    }
+
+    // Add this function to calculate users within each area
+    function calculateWaitingCounts(waitingUsers) {
+      // Reset all counts
+      Object.values(window.barangayAreas).forEach(area => {
+        area.waitingCount = 0;
+      });
+
+      // Count users within each area
+      Object.values(waitingUsers || {}).forEach(user => {
+        const userLatLng = new google.maps.LatLng(user.latitude, user.longitude);
+
+        Object.entries(window.barangayAreas).forEach(([areaName, areaData]) => {
+          const areaCenter = new google.maps.LatLng(areaData.lat, areaData.lng);
+          const distance = google.maps.geometry.spherical.computeDistanceBetween(
+            userLatLng,
+            areaCenter
+          );
+
+          if (distance <= areaData.radius) {
+            areaData.waitingCount++;
+            // Update the label
+            const label = window.barangayLabels[areaName];
+            if (label && label.element) {
+              label.element.textContent = areaData.waitingCount;
+            }
+          }
+        });
+      });
+    }
+
+    // Listen for changes in waiting users
+    onValue(waitingUsersRef, (snapshot) => {
+      const waitingUsers = snapshot.val();
+      calculateWaitingCounts(waitingUsers);
+    });
+
+    // Firebase Integration continued...
+
+    // Modify the existing location tracking code
+    const originalEnableLocationTracking = enableLocationTracking;
+    enableLocationTracking = function() {
+      originalEnableLocationTracking();
+      
+      if (window.userLocationWatchId == null) {
+        window.userLocationWatchId = navigator.geolocation.watchPosition(
+          (position) => {
+            centerMapOnPosition(position, false);
+            updateWaitingArea(position); // Add this line to update user's waiting position
+          },
+          (err) => {
+            console.warn("watchPosition error", err);
+            if (err.code === err.PERMISSION_DENIED) {
+              disableLocationTracking(true);
+            }
+          },
+          { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+        );
+      }
+    };
+  </script>
+
+  <!-- Google Maps and Markers (must be global for callback) -->
+  <script>
+    let map;
+    let infoWindow;
+    window.markers = {};
+    window.latestRoutes = {}; // Store latest route for each jeepney
+    window.userMarker = null;
+    window.userLocationWatchId = null;
+    window.userLocationEnabled = false;
+
+    // Barangay coordinates and waiting areas
+    window.barangayAreas = {
+      // CAB01: 15°07'42.4"N 120°03'30.3"E → lat: 15.128444444, lng: 120.058416667
+      'CAB01': { lat: 15.128444444, lng: 120.058416667, radius: 500, waitingCount: 0 },
+      'CAB02': { lat: 15.136438, lng: 120.055562, radius: 500, waitingCount: 0 },
+      'CAB03': { lat: 15.144983, lng: 120.052606, radius: 500, waitingCount: 0 },
+      'CAB04': { lat: 15.153589, lng: 120.053078, radius: 500, waitingCount: 0 },
+      'CAB05': { lat: 15.161999, lng: 120.054831, radius: 500, waitingCount: 0 },
+      'CAB06': { lat: 15.170827, lng: 120.053237, radius: 500, waitingCount: 0 },
+      'CAB07': { lat: 15.17813, lng: 120.04789, radius: 500, waitingCount: 0 },
+      'CAB08': { lat: 15.18549, lng: 120.04254, radius: 500, waitingCount: 0 },
+      'CAB09': { lat: 15.19269, lng: 120.03695, radius: 500, waitingCount: 0 },
+      'CAB10': { lat: 15.19998, lng: 120.03169, radius: 500, waitingCount: 0 },
+      'CAB11': { lat: 15.20855, lng: 120.02890, radius: 500, waitingCount: 0 },
+      'BOT01': { lat: 15.21674, lng: 120.02495, radius: 500, waitingCount: 0 },
+      'BOT02': { lat: 15.22454, lng: 120.02033, radius: 500, waitingCount: 0 },
+      'BOT03': { lat: 15.23212, lng: 120.01576, radius: 500, waitingCount: 0 }
+    };
+
+    // Store circle overlays and labels
+    window.barangayCircles = {};
+    window.barangayLabels = {};
+
+    function filterMarkersByRoute(route) {
+      for (const [key, marker] of Object.entries(window.markers)) {
+        const latestRoute = window.latestRoutes[key];
+        if (!route || latestRoute === route) {
+          marker.setMap(map);
+        } else {
+          marker.setMap(null);
+        }
+      }
+    }
+
+    // This must be global for Google Maps callback
+    function initMap() {
+      map = new google.maps.Map(document.getElementById("map"), {
+        zoom: 12,
+        center: { lat: 15.179446, lng: 120.04668 },
+        gestureHandling: "greedy"  // This enables single-finger panning
+      });
+
+      infoWindow = new google.maps.InfoWindow();
+
+      // Use the global jeepneyData
+      const jeepneyData = window.jeepneyData;
+
+      for (const [key, data] of Object.entries(jeepneyData)) {
+        const marker = new google.maps.Marker({
+          position: { lat: data.lat, lng: data.lng },
+          map: map,
+          title: data.title
+        });
+
+        marker.latestData = { latitude: data.lat, longitude: data.lng, route: data.route };
+        window.markers[key] = marker;
+        window.latestRoutes[key] = data.route;
+
+        marker.addListener("click", function () {
+          if (typeof window.generateInfoContent === "function") {
+            infoWindow.setContent(window.generateInfoContent(key, marker));
+          } else {
+            infoWindow.setContent(`<strong>${data.title}</strong>`);
+          }
+          infoWindow.open(map, marker);
+        });
+      }
+
+      // Add event listener for destination select
+      document.getElementById('to-select').addEventListener('change', function () {
+        filterMarkersByRoute(this.value);
+      });
+
+     // Initialize location permission controls now that map exists
+     try { setupUserLocationControls(); } catch (e) { console.warn("location controls init failed", e); }
+
+     // Create waiting area overlays
+     createWaitingAreas();
+    }
+
+    // Location control helpers
+    function updateLocStatus(text) {
+      const el = document.getElementById('loc-status');
+      if (el) el.textContent = "Permission: " + text;
+    }
+    
+    // Restore InfoWindow content generator so all jeepney markers show full callouts
+    function escapeHtml(str) {
+      return String(str || '').replace(/[&<>"'`=\/]/g, function (s) {
+        return {
+          '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;',
+          "'": '&#39;', '/': '&#x2F;', '`': '&#x60;', '=': '&#x3D;'
+        }[s];
+      });
+    }
+
+    function generateInfoContent(key, marker) {
+      const data = (window.jeepneyData && window.jeepneyData[key]) ? window.jeepneyData[key] : {};
+      const title = escapeHtml(data.title || key);
+      const link = data.link ? escapeHtml(data.link) : '#';
+
+      return `
+        <div class="info-window-content" style="min-width:100px;max-width:160px;font-family:inherit;color:var(--text-color);padding:4px">
+          <div class="iw-title" style="font-weight:600;margin-bottom:4px;font-size:0.9rem;text-align:center">${title}</div>
+          <a class="info-window-button" href="${link}" target="_blank" rel="noopener" 
+             style="display:block;padding:6px 8px;background:var(--accent-blue);color:#fff;border-radius:4px;
+                    text-decoration:none;font-weight:500;font-size:0.8rem;text-align:center">View details</a>
+        </div>
+      `;
+    }
+    // make available globally (some code checks window.generateInfoContent)
+    window.generateInfoContent = generateInfoContent;
+    
+    function centerMapOnPosition(position, zoomWhenCenter = 14) {
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+      const latLng = { lat, lng };
+
+      // Only recenter when zoomWhenCenter !== false.
+      if (zoomWhenCenter !== false) {
+        map.setCenter(latLng);
+        map.setZoom(zoomWhenCenter === undefined ? 14 : zoomWhenCenter);
+      }
+
+      if (!window.userMarker) {
+        window.userMarker = new google.maps.Marker({
+          position: latLng,
+          map,
+          title: "You",
+          optimized: false,
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 8,
+            fillColor: "#4285F4",
+            fillOpacity: 1,
+            strokeColor: "#ffffff",
+            strokeWeight: 2
+          }
+        });
+
+        // show callout when clicking the user marker
+        window.userMarker.addListener("click", function () {
+          if (!infoWindow) infoWindow = new google.maps.InfoWindow({ maxWidth: 220 });
+          infoWindow.setContent('<div class="info-window-content"><div class="iw-title">You are here.</div></div>');
+          infoWindow.open(map, window.userMarker);
+        });
+      } else {
+        window.userMarker.setPosition(latLng);
+        window.userMarker.setMap(map);
+      }
+    }
+
+    function enableLocationTracking() {
+      if (!navigator.geolocation) {
+        updateLocStatus("unsupported");
+        document.getElementById('loc-toggle').checked = false;
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          window.userLocationEnabled = true;
+          updateLocStatus("granted");
+          centerMapOnPosition(pos);
+          // start watching to update marker
+          if (window.userLocationWatchId == null) {
+            window.userLocationWatchId = navigator.geolocation.watchPosition(
+              // update marker position only; do NOT recenter the map while user pans
+              (p) => centerMapOnPosition(p, false),
+               (err) => {
+                 console.warn("watchPosition error", err);
+                 if (err.code === err.PERMISSION_DENIED) {
+                   disableLocationTracking(true);
+                 }
+               },
+               { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+             );
+           }
+        },
+        (err) => {
+          console.warn("getCurrentPosition error", err);
+          updateLocStatus(err.code === 1 ? "denied" : "error");
+          document.getElementById('loc-toggle').checked = false;
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    }
+
+    function disableLocationTracking(silent = false) {
+      window.userLocationEnabled = false;
+      if (window.userLocationWatchId != null) {
+        navigator.geolocation.clearWatch(window.userLocationWatchId);
+        window.userLocationWatchId = null;
+      }
+      if (window.userMarker) {
+        window.userMarker.setMap(null);
+      }
+      if (!silent) updateLocStatus("off");
+    }
+
+    function setupUserLocationControls() {
+      const checkbox = document.getElementById('loc-toggle');
+      const statusEl = document.getElementById('loc-status');
+      if (!checkbox || !statusEl) return;
+
+      // Reflect current permission state (if Permissions API available)
+      if (navigator.permissions && navigator.permissions.query) {
+        navigator.permissions.query({ name: 'geolocation' }).then((perm) => {
+          updateLocStatus(perm.state);
+          if (perm.state === 'granted') {
+            checkbox.checked = true;
+            enableLocationTracking();
+          } else {
+            checkbox.checked = false;
+          }
+          perm.onchange = function () {
+            updateLocStatus(perm.state);
+            if (perm.state === 'granted') {
+              checkbox.checked = true;
+              enableLocationTracking();
+            } else {
+              checkbox.checked = false;
+              disableLocationTracking(true);
+            }
+          };
+        }).catch(() => updateLocStatus('unknown'));
+      } else {
+        // Fallback if Permissions API not available
+        updateLocStatus('unknown');
+      }
+
+      checkbox.addEventListener('change', function () {
+        if (this.checked) {
+          enableLocationTracking();
+        } else {
+          disableLocationTracking();
+        }
+      });
+    }
+
+    // Add this code after the existing window.markers declaration in your script
+
+
+    // Store circle overlays and labels
+    window.barangayCircles = {};
+    window.barangayLabels = {};
+
+    // Function to create waiting area overlays
+    function createWaitingAreas() {
+      Object.entries(window.barangayAreas).forEach(([name, data]) => {
+        // Create circle overlay
+        const circle = new google.maps.Circle({
+          strokeColor: '#FF6B6B',
+          strokeOpacity: 0.8,
+          strokeWeight: 2,
+          fillColor: '#FF6B6B',
+          fillOpacity: 0.15,
+          map: map,
+          center: { lat: data.lat, lng: data.lng },
+          radius: data.radius
+        });
+
+        // Create label overlay
+        const labelDiv = document.createElement('div');
+        labelDiv.className = 'waiting-count-label';
+
+        const customOverlay = new google.maps.OverlayView();
+        customOverlay.onAdd = function() {
+          const panes = this.getPanes();
+          panes.overlayLayer.appendChild(labelDiv);
+        };
+
+        customOverlay.draw = function() {
+          const projection = this.getProjection();
+          const position = projection.fromLatLngToDivPixel(
+            new google.maps.LatLng(data.lat, data.lng)
+          );
+          labelDiv.style.left = (position.x - 12) + 'px';
+          labelDiv.style.top = (position.y - 12) + 'px';
+          labelDiv.textContent = '0';
+        };
+
+        customOverlay.onRemove = function() {
+          labelDiv.parentElement.removeChild(labelDiv);
+        };
+
+        window.barangayCircles[name] = circle;
+        window.barangayLabels[name] = { overlay: customOverlay, element: labelDiv };
+        customOverlay.setMap(map);
+      });
+    }
+
+    // Function to update waiting counts
+    function updateWaitingCounts(userPosition) {
+      Object.entries(window.barangayAreas).forEach(([name, data]) => {
+        const barangayCenter = new google.maps.LatLng(data.lat, data.lng);
+        const userLatLng = new google.maps.LatLng(
+          userPosition.coords.latitude,
+          userPosition.coords.longitude
+        );
+        
+        // Calculate distance between user and barangay center
+        const distance = google.maps.geometry.spherical.computeDistanceBetween(
+          barangayCenter,
+          userLatLng
+        );
+
+        // If user is within radius, increment count
+        if (distance <= data.radius) {
+          data.waitingCount++;
+          const label = window.barangayLabels[name];
+          if (label) {
+            label.element.textContent = data.waitingCount;
+          }
+        }
+      });
+    }
+
+    // Modify the existing enableLocationTracking function to include waiting area updates
+    const originalEnableLocationTracking = enableLocationTracking;
+    enableLocationTracking = function() {
+      originalEnableLocationTracking();
+      if (!window.waitingAreasInitialized) {
+        createWaitingAreas();
+        window.waitingAreasInitialized = true;
+      }
+      
+      // Update waiting counts when user location changes
+      if (window.userLocationWatchId == null) {
+        window.userLocationWatchId = navigator.geolocation.watchPosition(
+          (position) => {
+            centerMapOnPosition(position, false);
+            updateWaitingCounts(position);
+          },
+          (err) => {
+            console.warn("watchPosition error", err);
+            if (err.code === err.PERMISSION_DENIED) {
+              disableLocationTracking(true);
+            }
+          },
+          { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+        );
+      }
+    };
+
+    // Add in your existing script section
+    document.getElementById('waiting-areas-toggle').addEventListener('change', function(e) {
+      const isChecked = e.target.checked;
+      toggleOverlays(isChecked);
+    });
+
+    function toggleOverlays(show) {
+      Object.values(window.barangayCircles).forEach(circle => {
+        circle.setVisible(show);
+      });
+      Object.values(window.barangayLabels).forEach(label => {
+        label.overlay.setMap(show ? map : null);
+      });
+    }
+
+    // Modify the createWaitingAreas function
+    function createWaitingAreas() {
+      Object.entries(window.barangayAreas).forEach(([name, data]) => {
+        // Create circle overlay
+        const circle = new google.maps.Circle({
+          strokeColor: '#FF6B6B',
+          strokeOpacity: 0.8,
+          strokeWeight: 2,
+          fillColor: '#FF6B6B',
+          fillOpacity: 0.15,
+          map: map,
+          center: { lat: data.lat, lng: data.lng },
+          radius: data.radius
+        });
+        circle.setVisible(false); // Initially hidden
+        
+        // Create label overlay
+        const labelDiv = document.createElement('div');
+        labelDiv.className = 'waiting-count-label';
+
+        const customOverlay = new google.maps.OverlayView();
+        customOverlay.onAdd = function() {
+          const panes = this.getPanes();
+          panes.overlayLayer.appendChild(labelDiv);
+        };
+
+        customOverlay.draw = function() {
+          const projection = this.getProjection();
+          const position = projection.fromLatLngToDivPixel(
+            new google.maps.LatLng(data.lat, data.lng)
+          );
+          labelDiv.style.left = (position.x - 12) + 'px';
+          labelDiv.style.top = (position.y - 12) + 'px';
+          labelDiv.textContent = '0';
+        };
+
+        customOverlay.onRemove = function() {
+          labelDiv.parentElement.removeChild(labelDiv);
+        };
+
+        window.barangayCircles[name] = circle;
+        window.barangayLabels[name] = { overlay: customOverlay, element: labelDiv };
+        customOverlay.setMap(null); // Initially hidden
+      });
+    }
+
+    // Add this after your map initialization
+    document.getElementById('overlay-toggle').addEventListener('change', function(e) {
+      toggleOverlays(e.target.checked);
+    });
+  </script>
+
+  <!-- Hamburger menu toggle for mobile -->
+  <script>
+    function toggleMenu() {
+      document.getElementById('navLinks').classList.toggle('show');
+    }
+
+    // Optional: Close menu when a link is clicked (for better UX)
+    document.addEventListener('DOMContentLoaded', function () {
+      document.querySelectorAll('.nav-links a').forEach(link => {
+        link.addEventListener('click', () => {
+          document.getElementById('navLinks').classList.remove('show');
+        });
+      });
+    });
+  </script>
+
+  <!-- Firebase Presence Tracking -->
+  <script type="module">
+    import { getDatabase, ref, onValue, onDisconnect, set, serverTimestamp, remove } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+    // Use the same Firebase config and app as above
+    const database = getDatabase();
+
+    // Reference for connections
+    const connectionsRef = ref(database, 'connections');
+    const thisConnectionRef = ref(database, `connections/${Math.random().toString(36).substr(2, 9)}`);
+
+    // Add this device to the connections list
+    set(thisConnectionRef, { connectedAt: serverTimestamp() });
+
+    // Listen for changes in the number of connections
+    onValue(connectionsRef, (snapshot) => {
+      const count = snapshot.exists() ? snapshot.size : 0;
+      document.getElementById('onlineCount').textContent = count;
+    });
+
+    // Remove this device when disconnected
+    onDisconnect(thisConnectionRef).remove();
+  </script>
+</body>
+</html>
