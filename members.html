@@ -118,7 +118,7 @@
 
     #map {
       width: 100%;
-      height: 500px;
+      height: 750px; /* 150% of the original 500px */
       border-radius: 10px;
       border: 1px solid #e0e0e0;
       box-shadow: 0 2px 8px rgba(0,0,0,0.05);
@@ -186,14 +186,18 @@
       background-repeat: no-repeat;
       color: white;
       display: flex;
-      align-items: flex-start;
-      justify-content: center;
-      min-height: 400px;
-      padding: 90px 20px 15px;
       flex-direction: column;
+      /* center content vertically within the hero height */
+      justify-content: center;
+      /* center text horizontally as well */
+      align-items: center;
+      text-align: center;
+      min-height: 200px;   /* reduced from 400px to 200px (half height) */
+      /* reduce extra padding so centering is consistent */
+      padding: 20px;
       border-radius: 0;
       margin-top: 60px;      /* space below nav */
-      margin-bottom: 2rem;   /* CHANGE THIS */
+      margin-bottom: 2rem;
       box-shadow: 0 4px 24px rgba(0,0,0,0.07);
     }
 
@@ -229,7 +233,7 @@
       }
 
       #map {
-        height: 300px;
+        height: 450px; /* 150% of the original mobile 300px */
       }
 
       section#contact {
@@ -524,16 +528,6 @@
           <option value="Iba">Iba</option>
         </select>
       </div>
-      <div class="dropdown-group">
-        <label for="from-select" style="font-weight: 500;">From:</label>
-        <select id="from-select">
-          <option value="">Select starting point</option>
-          <option value="San Felipe">San Felipe</option>
-          <option value="Cabangan">Cabangan</option>
-          <option value="Botolan">Botolan</option>
-          <option value="Iba">Iba</option>
-        </select>
-      </div>
     </div>
     <button onclick="window.location.href='index.html'">Back to Index</button>
   </div>
@@ -553,7 +547,7 @@
       We are currently conducting research to improve JeepnEE. Your feedback is valuable to us! Please let us know your thoughts and suggestions about this project.
     </p>
     <div style="text-align:center;">
-      <a href="https://forms.gle/your-google-form-link" target="_blank" class="cta-button">Give Feedback</a>
+      <a href="https://docs.google.com/forms/d/e/1FAIpQLSfuFGOwicdSC6zuPfI1co0c55tmtsbDrxiFX4Z-2hEdNUdxuw/viewform" target="_blank" class="cta-button">Give Feedback</a>
     </div>
   </section>
 
@@ -683,7 +677,8 @@
     function initMap() {
       map = new google.maps.Map(document.getElementById("map"), {
         zoom: 12,
-        center: { lat: 15.179446, lng: 120.04668 }
+        center: { lat: 15.179446, lng: 120.04668 },
+        gestureHandling: "greedy"  // This enables single-finger panning
       });
 
       infoWindow = new google.maps.InfoWindow();
@@ -740,14 +735,14 @@
     function generateInfoContent(key, marker) {
       const data = (window.jeepneyData && window.jeepneyData[key]) ? window.jeepneyData[key] : {};
       const title = escapeHtml(data.title || key);
-      const route = escapeHtml(data.route || '');
       const link = data.link ? escapeHtml(data.link) : '#';
 
       return `
-        <div class="info-window-content" style="min-width:120px;max-width:220px;font-family:inherit;color:var(--text-color)">
-          <div class="iw-title" style="font-weight:700;margin-bottom:6px;font-size:1rem;">${title}</div>
-          ${route ? `<div class="iw-route" style="margin-bottom:8px;font-size:0.9rem;color:rgba(46,61,73,0.9)">Route: ${route}</div>` : ''}
-          <a class="info-window-button" href="${link}" target="_blank" rel="noopener" style="display:inline-block;padding:8px 10px;background:var(--accent-blue);color:#fff;border-radius:6px;text-decoration:none;font-weight:600;font-size:0.9rem;">View details</a>
+        <div class="info-window-content" style="min-width:100px;max-width:160px;font-family:inherit;color:var(--text-color);padding:4px">
+          <div class="iw-title" style="font-weight:600;margin-bottom:4px;font-size:0.9rem;text-align:center">${title}</div>
+          <a class="info-window-button" href="${link}" target="_blank" rel="noopener" 
+             style="display:block;padding:6px 8px;background:var(--accent-blue);color:#fff;border-radius:4px;
+                    text-decoration:none;font-weight:500;font-size:0.8rem;text-align:center">View details</a>
         </div>
       `;
     }
