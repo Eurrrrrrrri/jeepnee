@@ -822,9 +822,8 @@
     window.userLocationWatchId = null;
     window.userLocationEnabled = false;
 
-    // Barangay coordinates and waiting areas
+    // Barangay coordinates and waiting areas (keep your existing data)
     window.barangayAreas = {
-      // CAB01: 15°07'42.4"N 120°03'30.3"E → lat: 15.128444444, lng: 120.058416667
       'CAB01': { lat: 15.128444444, lng: 120.058416667, radius: 500, waitingCount: 0 },
       'CAB02': { lat: 15.136438, lng: 120.055562, radius: 500, waitingCount: 0 },
       'CAB03': { lat: 15.144983, lng: 120.052606, radius: 500, waitingCount: 0 },
@@ -861,14 +860,13 @@
       map = new google.maps.Map(document.getElementById("map"), {
         zoom: 12,
         center: { lat: 15.179446, lng: 120.04668 },
-        gestureHandling: "greedy"  // This enables single-finger panning
+        gestureHandling: "greedy"
       });
 
       infoWindow = new google.maps.InfoWindow();
 
-      // Use the global jeepneyData
-      const jeepneyData = window.jeepneyData;
-
+      // place initial static jeepney markers from window.jeepneyData
+      const jeepneyData = window.jeepneyData || {};
       for (const [key, data] of Object.entries(jeepneyData)) {
         const marker = new google.maps.Marker({
           position: { lat: data.lat, lng: data.lng },
@@ -890,25 +888,25 @@
         });
       }
 
-      // Add event listener for destination select
-      document.getElementById('to-select').addEventListener('change', function () {
-        filterMarkersByRoute(this.value);
-      });
+      // Listen to route dropdown
+      const toSelect = document.getElementById('to-select');
+      if (toSelect) {
+        toSelect.addEventListener('change', function () {
+          filterMarkersByRoute(this.value);
+        });
+      }
 
-     // Initialize location permission controls now that map exists
-     try { setupUserLocationControls(); } catch (e) { console.warn("location controls init failed", e); }
-
-     // Create waiting area overlays
-     createWaitingAreas();
+      // Initialize location controls and waiting area overlays now that map exists
+      try { setupUserLocationControls(); } catch (e) { console.warn("location controls init failed", e); }
+      createWaitingAreas();
     }
 
-    // Location control helpers
+    // Location control helpers (unchanged)
     function updateLocStatus(text) {
       const el = document.getElementById('loc-status');
       if (el) el.textContent = "Permission: " + text;
     }
-    
-    // Restore InfoWindow content generator so all jeepney markers show full callouts
+
     function escapeHtml(str) {
       return String(str || '').replace(/[&<>"'`=\/]/g, function (s) {
         return {
@@ -932,15 +930,13 @@
         </div>
       `;
     }
-    // make available globally (some code checks window.generateInfoContent)
     window.generateInfoContent = generateInfoContent;
-    
+
     function centerMapOnPosition(position, zoomWhenCenter = 14) {
       const lat = position.coords.latitude;
       const lng = position.coords.longitude;
       const latLng = { lat, lng };
 
-      // Only recenter when zoomWhenCenter !== false.
       if (zoomWhenCenter !== false) {
         map.setCenter(latLng);
         map.setZoom(zoomWhenCenter === undefined ? 14 : zoomWhenCenter);
@@ -962,7 +958,6 @@
           }
         });
 
-        // show callout when clicking the user marker
         window.userMarker.addListener("click", function () {
           if (!infoWindow) infoWindow = new google.maps.InfoWindow({ maxWidth: 220 });
           infoWindow.setContent('<div class="info-window-content"><div class="iw-title">You are here.</div></div>');
@@ -974,6 +969,7 @@
       }
     }
 
+    // enableLocationTracking / disableLocationTracking (use your existing logic)
     function enableLocationTracking() {
       if (!navigator.geolocation) {
         updateLocStatus("unsupported");
@@ -986,13 +982,17 @@
           window.userLocationEnabled = true;
           updateLocStatus("granted");
           centerMapOnPosition(pos);
-          window.updateUserLocation(pos); // Add this line
+          if (typeof window.updateUserLocation === 'function') {
+            window.updateUserLocation(pos); // update waitingUsers in DB
+          }
 
           if (window.userLocationWatchId == null) {
             window.userLocationWatchId = navigator.geolocation.watchPosition(
               (position) => {
                 centerMapOnPosition(position, false);
-                window.updateUserLocation(position); // Add this line
+                if (typeof window.updateUserLocation === 'function') {
+                  window.updateUserLocation(position);
+                }
               },
               (err) => {
                 console.warn("watchPosition error", err);
@@ -1022,15 +1022,19 @@
       if (window.userMarker) {
         window.userMarker.setMap(null);
       }
+
+      // remove waitingUsers record if helper available
+      if (typeof window.removeThisWaitingUser === 'function') {
+        window.removeThisWaitingUser().catch(err => console.warn("remove waiting user failed", err));
+      }
+
       if (!silent) updateLocStatus("off");
     }
 
     function setupUserLocationControls() {
       const checkbox = document.getElementById('loc-toggle');
-      const statusEl = document.getElementById('loc-status');
-      if (!checkbox || !statusEl) return;
+      if (!checkbox) return;
 
-      // Reflect current permission state (if Permissions API available)
       if (navigator.permissions && navigator.permissions.query) {
         navigator.permissions.query({ name: 'geolocation' }).then((perm) => {
           updateLocStatus(perm.state);
@@ -1052,30 +1056,25 @@
           };
         }).catch(() => updateLocStatus('unknown'));
       } else {
-        // Fallback if Permissions API not available
         updateLocStatus('unknown');
       }
 
       checkbox.addEventListener('change', function () {
-        if (this.checked) {
-          enableLocationTracking();
-        } else {
-          disableLocationTracking();
-        }
+        if (this.checked) enableLocationTracking(); else disableLocationTracking();
       });
     }
 
-    // Add this code after the existing window.markers declaration in your script
-
-
-    // Store circle overlays and labels
-    window.barangayCircles = {};
-    window.barangayLabels = {};
-
-    // Function to create waiting area overlays
+    // Function to create waiting area overlays (single, consolidated)
     function createWaitingAreas() {
-      Object.entries(window.barangayAreas).forEach(([name, data]) => {
-        // Create circle overlay
+      // clear existing if any
+      Object.values(window.barangayCircles || {}).forEach(c => c.setMap(null));
+      Object.values(window.barangayLabels || {}).forEach(l => {
+        if (l && l.overlay && typeof l.overlay.setMap === 'function') l.overlay.setMap(null);
+      });
+      window.barangayCircles = {};
+      window.barangayLabels = {};
+
+      Object.entries(window.barangayAreas || {}).forEach(([name, data]) => {
         const circle = new google.maps.Circle({
           strokeColor: '#FF6B6B',
           strokeOpacity: 0.8,
@@ -1086,154 +1085,55 @@
           center: { lat: data.lat, lng: data.lng },
           radius: data.radius
         });
+        // start hidden
+        circle.setVisible(false);
 
-        // Create label overlay
         const labelDiv = document.createElement('div');
         labelDiv.className = 'waiting-count-label';
+        labelDiv.textContent = String(data.waitingCount || 0);
 
-        const customOverlay = new google.maps.OverlayView();
-        customOverlay.onAdd = function() {
-          const panes = this.getPanes();
-          panes.overlayLayer.appendChild(labelDiv);
+        const overlay = new google.maps.OverlayView();
+        overlay.onAdd = function() {
+          this.getPanes().overlayLayer.appendChild(labelDiv);
         };
-
-        customOverlay.draw = function() {
-          const projection = this.getProjection();
-          const position = projection.fromLatLngToDivPixel(
-            new google.maps.LatLng(data.lat, data.lng)
-          );
-          labelDiv.style.left = (position.x - 12) + 'px';
-          labelDiv.style.top = (position.y - 12) + 'px';
-          labelDiv.textContent = '0';
+        overlay.draw = function() {
+          const proj = this.getProjection();
+          if (!proj) return;
+          const pos = proj.fromLatLngToDivPixel(new google.maps.LatLng(data.lat, data.lng));
+          labelDiv.style.left = (pos.x - (labelDiv.offsetWidth/2)) + 'px';
+          labelDiv.style.top = (pos.y - (labelDiv.offsetHeight/2)) + 'px';
         };
-
-        customOverlay.onRemove = function() {
-          labelDiv.parentElement.removeChild(labelDiv);
+        overlay.onRemove = function() {
+          if (labelDiv.parentElement) labelDiv.parentElement.removeChild(labelDiv);
         };
+        // start hidden
+        overlay.setMap(null);
 
         window.barangayCircles[name] = circle;
-        window.barangayLabels[name] = { overlay: customOverlay, element: labelDiv };
-        customOverlay.setMap(map);
+        window.barangayLabels[name] = { overlay: overlay, element: labelDiv };
       });
     }
 
-    // Function to update waiting counts
-    function updateWaitingCounts(userPosition) {
-      Object.entries(window.barangayAreas).forEach(([name, data]) => {
-        const barangayCenter = new google.maps.LatLng(data.lat, data.lng);
-        const userLatLng = new google.maps.LatLng(
-          userPosition.coords.latitude,
-          userPosition.coords.longitude
-        );
-        
-        // Calculate distance between user and barangay center
-        const distance = google.maps.geometry.spherical.computeDistanceBetween(
-          barangayCenter,
-          userLatLng
-        );
-
-        // If user is within radius, increment count
-        if (distance <= data.radius) {
-          data.waitingCount++;
-          const label = window.barangayLabels[name];
-          if (label) {
-            label.element.textContent = data.waitingCount;
-          }
-        }
-      });
-    }
-
-    // Modify the existing enableLocationTracking function to include waiting area updates
-    const originalEnableLocationTracking = enableLocationTracking;
-    enableLocationTracking = function() {
-      originalEnableLocationTracking();
-      if (!window.waitingAreasInitialized) {
-        createWaitingAreas();
-        window.waitingAreasInitialized = true;
-      }
-      
-      // Update waiting counts when user location changes
-      if (window.userLocationWatchId == null) {
-        window.userLocationWatchId = navigator.geolocation.watchPosition(
-          (position) => {
-            centerMapOnPosition(position, false);
-            updateWaitingCounts(position);
-          },
-          (err) => {
-            console.warn("watchPosition error", err);
-            if (err.code === err.PERMISSION_DENIED) {
-              disableLocationTracking(true);
-            }
-          },
-          { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
-        );
-      }
-    };
-
-    // Add in your existing script section
-    document.getElementById('waiting-areas-toggle').addEventListener('change', function(e) {
-      const isChecked = e.target.checked;
-      toggleOverlays(isChecked);
-    });
-
+    // Toggle overlays: show/hide circles and label overlays
     function toggleOverlays(show) {
-      Object.values(window.barangayCircles).forEach(circle => {
-        circle.setVisible(show);
-      });
-      Object.values(window.barangayLabels).forEach(label => {
-        label.overlay.setMap(show ? map : null);
+      Object.values(window.barangayCircles || {}).forEach(circle => circle.setVisible(Boolean(show)));
+      Object.values(window.barangayLabels || {}).forEach(labelObj => {
+        if (labelObj && labelObj.overlay && typeof labelObj.overlay.setMap === 'function') {
+          labelObj.overlay.setMap(show ? map : null);
+        }
       });
     }
 
-    // Modify the createWaitingAreas function
-    function createWaitingAreas() {
-      Object.entries(window.barangayAreas).forEach(([name, data]) => {
-        // Create circle overlay
-        const circle = new google.maps.Circle({
-          strokeColor: '#FF6B6B',
-          strokeOpacity: 0.8,
-          strokeWeight: 2,
-          fillColor: '#FF6B6B',
-          fillOpacity: 0.15,
-          map: map,
-          center: { lat: data.lat, lng: data.lng },
-          radius: data.radius
+    // Attach single working listener to waiting areas checkbox
+    document.addEventListener('DOMContentLoaded', function () {
+      const waitingToggle = document.getElementById('waiting-areas-toggle');
+      if (waitingToggle) {
+        waitingToggle.addEventListener('change', function (e) {
+          toggleOverlays(e.target.checked);
         });
-        circle.setVisible(false); // Initially hidden
-        
-        // Create label overlay
-        const labelDiv = document.createElement('div');
-        labelDiv.className = 'waiting-count-label';
-
-        const customOverlay = new google.maps.OverlayView();
-        customOverlay.onAdd = function() {
-          const panes = this.getPanes();
-          panes.overlayLayer.appendChild(labelDiv);
-        };
-
-        customOverlay.draw = function() {
-          const projection = this.getProjection();
-          const position = projection.fromLatLngToDivPixel(
-            new google.maps.LatLng(data.lat, data.lng)
-          );
-          labelDiv.style.left = (position.x - 12) + 'px';
-          labelDiv.style.top = (position.y - 12) + 'px';
-          labelDiv.textContent = '0';
-        };
-
-        customOverlay.onRemove = function() {
-          labelDiv.parentElement.removeChild(labelDiv);
-        };
-
-        window.barangayCircles[name] = circle;
-        window.barangayLabels[name] = { overlay: customOverlay, element: labelDiv };
-        customOverlay.setMap(null); // Initially hidden
-      });
-    }
-
-    // Add this after your map initialization
-    document.getElementById('overlay-toggle').addEventListener('change', function(e) {
-      toggleOverlays(e.target.checked);
+        // ensure overlays start hidden
+        toggleOverlays(false);
+      }
     });
   </script>
 
