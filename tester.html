@@ -691,13 +691,29 @@
 
     // Keep overlays in sync with DB
     onValue(waitingUsersRef, (snapshot) => {
-      const waitingUsers = snapshot.val() || {};
+      const waitingUsersRaw = snapshot.val() || {};
+      const now = Date.now();
+      const STALE_MS = 3 * 60 * 1000; // 3 minutes
+
+      // Collect stale ids to remove (timestamp is serverTimestamp value)
+      const staleIds = [];
+      Object.entries(waitingUsersRaw).forEach(([id, user]) => {
+        const ts = Number(user?.timestamp) || 0;
+        if (ts && now - ts > STALE_MS) staleIds.push(id);
+      });
+
+      // Remove stale entries (fire-and-forget)
+      staleIds.forEach(id => {
+        remove(ref(database, `waitingUsers/${id}`)).catch(() => {});
+        // Also drop from the local view so counting below ignores them immediately
+        delete waitingUsersRaw[id];
+      });
 
       // reset counts
       Object.values(window.barangayAreas || {}).forEach(a => a.waitingCount = 0);
 
-      // count users per area
-      Object.values(waitingUsers).forEach(user => {
+      // count users per area (ignoring removed/stale users)
+      Object.values(waitingUsersRaw).forEach(user => {
         if (!user || user.latitude == null || user.longitude == null) return;
         const u = new google.maps.LatLng(user.latitude, user.longitude);
         Object.entries(window.barangayAreas || {}).forEach(([name, area]) => {
