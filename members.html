@@ -241,42 +241,6 @@
       }
     }
 
-    /* Additional styles for map controls and layout */
-    .map-controls {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-      align-items: stretch;
-      margin-bottom: 1rem;
-      max-width: 350px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-    .dropdown-group {
-      display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
-      width: 100%;
-    }
-    .dropdown-group label {
-      font-weight: 500;
-      margin-bottom: 2px;
-    }
-    .dropdown-group select {
-      padding: 8px 12px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-      font-size: 1em;
-      width: 100%;
-      max-width: 100%;
-      box-sizing: border-box;
-    }
-    /* Hide horizontal scroll on all devices */
-    html, body {
-      max-width: 100vw;
-      overflow-x: hidden;
-    }
-
     /* Help Us Section */
     .help-section {
       background: #fff; /* Match other sections */
@@ -459,6 +423,120 @@
       .loc-slider::after { width: 18px; height: 18px; top: 4px; left: 4px; }
       .loc-toggle input:checked + .loc-slider::after { transform: translateX(18px); }
     }
+
+    /* Waiting area styles */
+    .waiting-count-label {
+      position: absolute;
+      background: white;
+      border: 2px solid #FF6B6B;
+      border-radius: 50%;
+      color: #333;
+      font-weight: bold;
+      padding: 8px;
+      min-width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      z-index: 1000;
+      pointer-events: none;
+    }
+
+    /* Add inside the existing <style> tag */
+    .overlay-toggle-container {
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .overlay-toggle {
+      position: relative;
+      display: inline-block;
+      width: 60px;
+      height: 34px;
+    }
+
+    .overlay-toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .overlay-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 34px;
+    }
+
+    .overlay-slider:before {
+      position: absolute;
+      content: "";
+      height: 26px;
+      width: 26px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+
+    input:checked + .overlay-slider {
+      background-color: var(--primary-color);
+    }
+
+    input:checked + .overlay-slider:before {
+      transform: translateX(26px);
+    }
+
+    /* New styles for waiting areas toggle */
+    .toggle-container {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    .toggle {
+      position: relative;
+      width: 60px;
+      height: 34px;
+      background-color: #ccc;
+      border-radius: 34px;
+      transition: background-color 0.4s;
+    }
+
+    .toggle-button {
+      position: absolute;
+      top: 50%;
+      left: 4px;
+      width: 26px;
+      height: 26px;
+      background-color: white;
+      border-radius: 50%;
+      transition: transform 0.4s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: #333;
+      font-size: 0.8rem;
+    }
+
+    /* Checked state styles */
+    #waiting-areas-toggle.checked {
+      background-color: var(--primary-color);
+    }
+    #waiting-areas-toggle.checked .toggle-button {
+      transform: translateX(26px);
+      color: white;
+    }
   </style>
 </head>
 <body>
@@ -517,16 +595,35 @@
   <div class="container">
     <h2>JeepnEE Real-Time Map</h2>
     <div id="map"></div>
-    <div class="map-controls">
-      <div class="dropdown-group">
-        <label for="to-select" style="font-weight: 500;">To:</label>
-        <select id="to-select">
-          <option value="">Select destination</option>
-          <option value="San Felipe">San Felipe</option>
-          <option value="Cabangan">Cabangan</option>
-          <option value="Botolan">Botolan</option>
-          <option value="Iba">Iba</option>
-        </select>
+    <!-- Replace both the dropdown and waiting areas sections with this -->
+    <div class="location-section" style="margin-top: 10px;">
+      <div style="display: flex; flex-direction: column; gap: 15px; max-width: 400px; margin: 0 auto;">
+        <!-- Destination dropdown -->
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <p style="margin: 0;">Select Destination</p>
+          <div style="width: 200px;">
+            <select id="to-select" style="width: 100%; padding: 8px; border-radius: 5px; border: 1px solid #ccc;">
+              <option value="">Select destination</option>
+              <option value="San Felipe">San Felipe</option>
+              <option value="Cabangan">Cabangan</option>
+              <option value="Botolan">Botolan</option>
+              <option value="Iba">Iba</option>
+            </select>
+          </div>
+        </div>
+        
+        <!-- Waiting areas toggle -->
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <p style="margin: 0;">Show Waiting Areas</p>
+          <div class="loc-toggle-container">
+            <div class="loc-toggle-wrap">
+              <label class="loc-toggle" title="Show waiting areas">
+                <input id="waiting-areas-toggle" type="checkbox" aria-label="Show waiting areas" />
+                <span class="loc-slider" role="switch" aria-checked="false" tabindex="0"></span>
+              </label>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     <button onclick="window.location.href='index.html'">Back to Index</button>
@@ -563,7 +660,7 @@
   </footer>
 
   <!-- Google Maps API -->
-  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDjEkI9duxMBLHWzrZeAmkWP8IlQCyLPmE&callback=initMap"></script>
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDjEkI9duxMBLHWzrZeAmkWP8IlQCyLPmE&libraries=geometry&callback=initMap"></script>
 
   <!-- Firebase Integration -->
   <script type="module">
@@ -662,6 +759,29 @@
     window.userLocationWatchId = null;
     window.userLocationEnabled = false;
 
+    // Barangay coordinates and waiting areas
+    window.barangayAreas = {
+      // CAB01: 15°07'42.4"N 120°03'30.3"E → lat: 15.128444444, lng: 120.058416667
+      'CAB01': { lat: 15.128444444, lng: 120.058416667, radius: 500, waitingCount: 0 },
+      'CAB02': { lat: 15.136438, lng: 120.055562, radius: 500, waitingCount: 0 },
+      'CAB03': { lat: 15.144983, lng: 120.052606, radius: 500, waitingCount: 0 },
+      'CAB04': { lat: 15.153589, lng: 120.053078, radius: 500, waitingCount: 0 },
+      'CAB05': { lat: 15.161999, lng: 120.054831, radius: 500, waitingCount: 0 },
+      'CAB06': { lat: 15.170827, lng: 120.053237, radius: 500, waitingCount: 0 },
+      'CAB07': { lat: 15.17813, lng: 120.04789, radius: 500, waitingCount: 0 },
+      'CAB08': { lat: 15.18549, lng: 120.04254, radius: 500, waitingCount: 0 },
+      'CAB09': { lat: 15.19269, lng: 120.03695, radius: 500, waitingCount: 0 },
+      'CAB10': { lat: 15.19998, lng: 120.03169, radius: 500, waitingCount: 0 },
+      'CAB11': { lat: 15.20855, lng: 120.02890, radius: 500, waitingCount: 0 },
+      'BOT01': { lat: 15.21674, lng: 120.02495, radius: 500, waitingCount: 0 },
+      'BOT02': { lat: 15.22454, lng: 120.02033, radius: 500, waitingCount: 0 },
+      'BOT03': { lat: 15.23212, lng: 120.01576, radius: 500, waitingCount: 0 }
+    };
+
+    // Store circle overlays and labels
+    window.barangayCircles = {};
+    window.barangayLabels = {};
+
     function filterMarkersByRoute(route) {
       for (const [key, marker] of Object.entries(window.markers)) {
         const latestRoute = window.latestRoutes[key];
@@ -714,6 +834,9 @@
 
      // Initialize location permission controls now that map exists
      try { setupUserLocationControls(); } catch (e) { console.warn("location controls init failed", e); }
+
+     // Create waiting area overlays
+     createWaitingAreas();
     }
 
     // Location control helpers
@@ -875,6 +998,177 @@
         }
       });
     }
+
+    // Add this code after the existing window.markers declaration in your script
+
+
+    // Store circle overlays and labels
+    window.barangayCircles = {};
+    window.barangayLabels = {};
+
+    // Function to create waiting area overlays
+    function createWaitingAreas() {
+      Object.entries(window.barangayAreas).forEach(([name, data]) => {
+        // Create circle overlay
+        const circle = new google.maps.Circle({
+          strokeColor: '#FF6B6B',
+          strokeOpacity: 0.8,
+          strokeWeight: 2,
+          fillColor: '#FF6B6B',
+          fillOpacity: 0.15,
+          map: map,
+          center: { lat: data.lat, lng: data.lng },
+          radius: data.radius
+        });
+
+        // Create label overlay
+        const labelDiv = document.createElement('div');
+        labelDiv.className = 'waiting-count-label';
+
+        const customOverlay = new google.maps.OverlayView();
+        customOverlay.onAdd = function() {
+          const panes = this.getPanes();
+          panes.overlayLayer.appendChild(labelDiv);
+        };
+
+        customOverlay.draw = function() {
+          const projection = this.getProjection();
+          const position = projection.fromLatLngToDivPixel(
+            new google.maps.LatLng(data.lat, data.lng)
+          );
+          labelDiv.style.left = (position.x - 12) + 'px';
+          labelDiv.style.top = (position.y - 12) + 'px';
+          labelDiv.textContent = '0';
+        };
+
+        customOverlay.onRemove = function() {
+          labelDiv.parentElement.removeChild(labelDiv);
+        };
+
+        window.barangayCircles[name] = circle;
+        window.barangayLabels[name] = { overlay: customOverlay, element: labelDiv };
+        customOverlay.setMap(map);
+      });
+    }
+
+    // Function to update waiting counts
+    function updateWaitingCounts(userPosition) {
+      Object.entries(window.barangayAreas).forEach(([name, data]) => {
+        const barangayCenter = new google.maps.LatLng(data.lat, data.lng);
+        const userLatLng = new google.maps.LatLng(
+          userPosition.coords.latitude,
+          userPosition.coords.longitude
+        );
+        
+        // Calculate distance between user and barangay center
+        const distance = google.maps.geometry.spherical.computeDistanceBetween(
+          barangayCenter,
+          userLatLng
+        );
+
+        // If user is within radius, increment count
+        if (distance <= data.radius) {
+          data.waitingCount++;
+          const label = window.barangayLabels[name];
+          if (label) {
+            label.element.textContent = data.waitingCount;
+          }
+        }
+      });
+    }
+
+    // Modify the existing enableLocationTracking function to include waiting area updates
+    const originalEnableLocationTracking = enableLocationTracking;
+    enableLocationTracking = function() {
+      originalEnableLocationTracking();
+      if (!window.waitingAreasInitialized) {
+        createWaitingAreas();
+        window.waitingAreasInitialized = true;
+      }
+      
+      // Update waiting counts when user location changes
+      if (window.userLocationWatchId == null) {
+        window.userLocationWatchId = navigator.geolocation.watchPosition(
+          (position) => {
+            centerMapOnPosition(position, false);
+            updateWaitingCounts(position);
+          },
+          (err) => {
+            console.warn("watchPosition error", err);
+            if (err.code === err.PERMISSION_DENIED) {
+              disableLocationTracking(true);
+            }
+          },
+          { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+        );
+      }
+    };
+
+    // Add in your existing script section
+    document.getElementById('waiting-areas-toggle').addEventListener('change', function(e) {
+      const isChecked = e.target.checked;
+      toggleOverlays(isChecked);
+    });
+
+    function toggleOverlays(show) {
+      Object.values(window.barangayCircles).forEach(circle => {
+        circle.setVisible(show);
+      });
+      Object.values(window.barangayLabels).forEach(label => {
+        label.overlay.setMap(show ? map : null);
+      });
+    }
+
+    // Modify the createWaitingAreas function
+    function createWaitingAreas() {
+      Object.entries(window.barangayAreas).forEach(([name, data]) => {
+        // Create circle overlay
+        const circle = new google.maps.Circle({
+          strokeColor: '#FF6B6B',
+          strokeOpacity: 0.8,
+          strokeWeight: 2,
+          fillColor: '#FF6B6B',
+          fillOpacity: 0.15,
+          map: map,
+          center: { lat: data.lat, lng: data.lng },
+          radius: data.radius
+        });
+        circle.setVisible(false); // Initially hidden
+        
+        // Create label overlay
+        const labelDiv = document.createElement('div');
+        labelDiv.className = 'waiting-count-label';
+
+        const customOverlay = new google.maps.OverlayView();
+        customOverlay.onAdd = function() {
+          const panes = this.getPanes();
+          panes.overlayLayer.appendChild(labelDiv);
+        };
+
+        customOverlay.draw = function() {
+          const projection = this.getProjection();
+          const position = projection.fromLatLngToDivPixel(
+            new google.maps.LatLng(data.lat, data.lng)
+          );
+          labelDiv.style.left = (position.x - 12) + 'px';
+          labelDiv.style.top = (position.y - 12) + 'px';
+          labelDiv.textContent = '0';
+        };
+
+        customOverlay.onRemove = function() {
+          labelDiv.parentElement.removeChild(labelDiv);
+        };
+
+        window.barangayCircles[name] = circle;
+        window.barangayLabels[name] = { overlay: customOverlay, element: labelDiv };
+        customOverlay.setMap(null); // Initially hidden
+      });
+    }
+
+    // Add this after your map initialization
+    document.getElementById('overlay-toggle').addEventListener('change', function(e) {
+      toggleOverlays(e.target.checked);
+    });
   </script>
 
   <!-- Hamburger menu toggle for mobile -->
@@ -907,14 +1201,14 @@
     // Add this device to the connections list
     set(thisConnectionRef, { connectedAt: serverTimestamp() });
 
-    // Remove this device when disconnected
-    onDisconnect(thisConnectionRef).remove();
-
     // Listen for changes in the number of connections
     onValue(connectionsRef, (snapshot) => {
       const count = snapshot.exists() ? snapshot.size : 0;
       document.getElementById('onlineCount').textContent = count;
     });
+
+    // Remove this device when disconnected
+    onDisconnect(thisConnectionRef).remove();
   </script>
 </body>
 </html>
