@@ -537,6 +537,86 @@
       transform: translateX(26px);
       color: white;
     }
+
+    /* Modal styles */
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+    }
+
+    .modal[aria-hidden="true"] {
+      display: none;
+    }
+
+    .modal-panel {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+      padding: 2rem;
+      max-width: 400px;
+      width: 90%;
+      position: relative;
+      z-index: 10001;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      z-index: 10000;
+    }
+
+    .modal h3 {
+      margin-bottom: 1rem;
+      font-size: 1.25rem;
+      color: #1a3d4c;
+      text-align: center;
+    }
+
+    .modal select {
+      width: 100%;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      margin-bottom: 1rem;
+    }
+
+    .modal button {
+      padding: 10px 20px;
+      background-color: var(--accent-blue);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background-color 0.3s;
+    }
+    .modal button:hover {
+      background-color: var(--cta-hover-blue);
+    }
+
+    /* Responsive adjustments for modal */
+    @media (max-width: 560px) {
+      .modal-panel {
+        padding: 1.5rem;
+      }
+      .modal h3 {
+        font-size: 1.1rem;
+      }
+      .modal button {
+        width: 100%;
+        padding: 12px;
+        font-size: 16px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -590,6 +670,22 @@
       </div>
       <div id="loc-status">Permission: unknown</div>
     </div>
+
+    <!-- Destination prompt shown when user enables location (replaced by modal) -->
+    <!-- <div id="destination-prompt" style="display:none; margin-top:12px; text-align:center;">
+      <div style="margin-bottom:8px; font-weight:600;">Select your destination</div>
+      <select id="loc-destination" style="width:220px; padding:8px; border-radius:6px; border:1px solid #ccc;">
+        <option value="">-- choose destination --</option>
+        <option value="San Felipe">San Felipe</option>
+        <option value="Cabangan">Cabangan</option>
+        <option value="Botolan">Botolan</option>
+        <option value="Iba">Iba</option>
+      </select>
+      <div style="margin-top:10px;">
+        <button id="dest-confirm" style="margin-right:8px;">Confirm</button>
+        <button id="dest-cancel" type="button" style="background:#eee;color:#333;">Cancel</button>
+      </div>
+    </div> -->
   </section>
 
   <div class="container">
@@ -598,11 +694,11 @@
     <!-- Replace both the dropdown and waiting areas sections with this -->
     <div class="location-section" style="margin-top: 10px;">
       <div style="display: flex; flex-direction: column; gap: 15px; max-width: 400px; margin: 0 auto;">
-        <!-- Destination dropdown -->
-        <div style="display: flex; align-items: center; justify-content: space-between;">
-          <p style="margin: 0;">Select Destination</p>
+        <!-- Destination dropdown (visible global control used elsewhere) -->
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <p style="margin:0;">Select Destination</p>
           <div style="width: 200px;">
-            <select id="to-select" style="width: 100%; padding: 8px; border-radius: 5px; border: 1px solid #ccc;">
+            <select id="to-select" style="width:100%; padding:8px; border-radius:5px; border:1px solid #ccc;">
               <option value="">Select destination</option>
               <option value="San Felipe">San Felipe</option>
               <option value="Cabangan">Cabangan</option>
@@ -611,7 +707,6 @@
             </select>
           </div>
         </div>
-        
         <!-- Waiting areas toggle -->
         <div style="display: flex; align-items: center; justify-content: space-between;">
           <p style="margin: 0;">Show Waiting Areas</p>
@@ -627,6 +722,25 @@
       </div>
     </div>
     <button onclick="window.location.href='index.html'">Back to Index</button>
+  </div>
+
+  <!-- Destination modal (appears when enabling 'Are you waiting?') -->
+  <div id="destination-modal" class="modal" aria-hidden="true" role="dialog" style="display:none;">
+    <div class="modal-backdrop" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);"></div>
+    <div class="modal-panel" role="document" style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:#fff;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,0.2);padding:20px;max-width:360px;width:90%;z-index:10001;">
+      <h3 style="margin-bottom:8px;">Select your destination</h3>
+      <select id="modal-destination" style="width:100%; padding:10px; border-radius:6px; border:1px solid #ccc; margin-bottom:12px;">
+        <option value="">-- choose destination --</option>
+        <option value="San Felipe">San Felipe</option>
+        <option value="Cabangan">Cabangan</option>
+        <option value="Botolan">Botolan</option>
+        <option value="Iba">Iba</option>
+      </select>
+      <div style="display:flex; justify-content:flex-end; gap:8px;">
+        <button id="modal-confirm">Confirm</button>
+        <button id="modal-cancel" type="button" style="background:#eee;color:#333;">Cancel</button>
+      </div>
+    </div>
   </div>
 
   <!-- Online Devices Section -->
@@ -670,6 +784,7 @@
       ref,
       onValue,
       set,
+      update,
       onDisconnect,
       serverTimestamp,
       remove,
@@ -712,30 +827,31 @@
       if (el) el.textContent = String(count);
     });
 
-    // Keep overlays in sync with DB
+    let showWaitingAreasEnabled = false; // track user's toggle preference
+
+    // Keep overlays in sync with DB (update counts and show/hide based on count AND toggle state)
     onValue(waitingUsersRef, (snapshot) => {
       const waitingUsersRaw = snapshot.val() || {};
       const now = Date.now();
       const STALE_MS = 3 * 60 * 1000; // 3 minutes
 
-      // Collect stale ids to remove (timestamp is serverTimestamp value)
+      // Collect stale ids to remove
       const staleIds = [];
       Object.entries(waitingUsersRaw).forEach(([id, user]) => {
         const ts = Number(user?.timestamp) || 0;
         if (ts && now - ts > STALE_MS) staleIds.push(id);
       });
 
-      // Remove stale entries (fire-and-forget)
+      // Remove stale entries
       staleIds.forEach(id => {
         remove(ref(database, `waitingUsers/${id}`)).catch(() => {});
-        // Also drop from the local view so counting below ignores them immediately
         delete waitingUsersRaw[id];
       });
 
       // reset counts
       Object.values(window.barangayAreas || {}).forEach(a => a.waitingCount = 0);
 
-      // count users per area (ignoring removed/stale users)
+      // count users per area
       Object.values(waitingUsersRaw).forEach(user => {
         if (!user || user.latitude == null || user.longitude == null) return;
         const u = new google.maps.LatLng(user.latitude, user.longitude);
@@ -746,10 +862,28 @@
         });
       });
 
-      // update labels if present
+      // update labels and show/hide overlays based on count AND toggle state
       Object.entries(window.barangayAreas || {}).forEach(([name, area]) => {
         const label = window.barangayLabels && window.barangayLabels[name];
-        if (label && label.element) label.element.textContent = String(area.waitingCount || 0);
+        if (label && label.element) {
+          label.element.textContent = String(area.waitingCount || 0);
+        }
+
+        // Show circle and overlay only if:
+        // 1. Toggle is ON (showWaitingAreasEnabled === true)
+        // 2. AND waitingCount > 0
+        const circle = window.barangayCircles && window.barangayCircles[name];
+        const isVisible = showWaitingAreasEnabled && area.waitingCount > 0;
+
+        if (circle) {
+          try { circle.setVisible(isVisible); } catch (e) {}
+        }
+
+        if (label && label.overlay) {
+          try {
+            label.overlay.setMap(isVisible ? map : null);
+          } catch (e) {}
+        }
       });
     });
 
@@ -774,11 +908,13 @@
         const lastSent = Number(localStorage.getItem('waitingUserLastSent') || 0);
 
         // throttle: only write if at least 10 seconds passed since last write
-        const THROTTLE_MS = 10_000;
+        const THROTTLE_MS = 30_000; // <-- change this value (ms) to adjust throttle
         if (now - lastSent < THROTTLE_MS) return;
 
         const userRef = ref(database, `waitingUsers/${id}`);
-        await set(userRef, {
+
+        // Use update() instead of set() so existing fields (eg. destination) are preserved
+        await update(userRef, {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
           timestamp: serverTimestamp()
@@ -805,10 +941,26 @@
       }
     }
 
+    // add this inside the Firebase Integration <script type="module"> block (near window.updateUserLocation / window.removeThisWaitingUser)
+    async function setUserDestination(destination) {
+      try {
+        if (!destination) return;
+        const id = getOrCreateWaitingUserId();
+        // write destination string under waitingUsers/{id}/destination
+        const destRef = ref(database, `waitingUsers/${id}/destination`);
+        await set(destRef, destination);
+      } catch (err) {
+        console.error("setUserDestination error:", err);
+      }
+    }
+
+    // expose for other scripts to call
+    window.setUserDestination = setUserDestination;
+
+    // expose update/remove helpers so map script can call them
     window.updateUserLocation = updateUserLocation;
     window.removeThisWaitingUser = removeThisWaitingUser;
-
-    // jeepneys listener (unchanged) — keep here so markers still update from DB
+  // jeepneys listener (unchanged) — keep here so markers still update from DB
     const jeepneysRootRef = ref(database, 'jeepneys');
     onValue(jeepneysRootRef, (snapshot) => {
       const all = snapshot.val() || {};
@@ -964,8 +1116,29 @@
       // Listen to route dropdown
       const toSelect = document.getElementById('to-select');
       if (toSelect) {
-        toSelect.addEventListener('change', function () {
-          filterMarkersByRoute(this.value);
+        toSelect.addEventListener('change', async function () {
+          const val = this.value;
+          // update visible markers immediately
+          filterMarkersByRoute(val);
+
+          // Only persist user's chosen destination in Firebase if the user is "waiting"
+          // (loc-toggle checked). Do NOT write to waitingUsers when toggle is OFF.
+          const locCheckbox = document.getElementById('loc-toggle');
+          const isWaiting = locCheckbox ? locCheckbox.checked : Boolean(window.userLocationEnabled);
+
+          if (!isWaiting) {
+            // user is not waiting — skip writing destination to waitingUsers
+            return;
+          }
+
+          // persist user's chosen destination in Firebase (if function available)
+          if (typeof window.setUserDestination === 'function') {
+            try {
+              await window.setUserDestination(val);
+            } catch (e) {
+              console.warn('setUserDestination failed', e);
+            }
+          }
         });
       }
 
@@ -1055,17 +1228,32 @@
           window.userLocationEnabled = true;
           updateLocStatus("granted");
           centerMapOnPosition(pos);
+          window.lastKnownPosition = pos;
           if (typeof window.updateUserLocation === 'function') {
-            window.updateUserLocation(pos); // update waitingUsers in DB
+            window.updateUserLocation(pos); // initial update
           }
+
+          // ensure we have a single periodic writer every 10s
+          if (window.userLocationIntervalId) {
+            clearInterval(window.userLocationIntervalId);
+            window.userLocationIntervalId = null;
+          }
+          window.userLocationIntervalId = setInterval(() => {
+            if (window.lastKnownPosition && typeof window.updateUserLocation === 'function') {
+              window.updateUserLocation(window.lastKnownPosition);
+            }
+          }, 30_000); // 10 seconds
 
           if (window.userLocationWatchId == null) {
             window.userLocationWatchId = navigator.geolocation.watchPosition(
               (position) => {
-                centerMapOnPosition(position, false);
+                // update last known position; periodic writer and immediate writer will use this
+                window.lastKnownPosition = position;
+                // try an immediate write (updateUserLocation will enforce throttle)
                 if (typeof window.updateUserLocation === 'function') {
                   window.updateUserLocation(position);
                 }
+                centerMapOnPosition(position, false);
               },
               (err) => {
                 console.warn("watchPosition error", err);
@@ -1096,6 +1284,13 @@
         window.userMarker.setMap(null);
       }
 
+      // stop periodic writer
+      if (window.userLocationIntervalId) {
+        clearInterval(window.userLocationIntervalId);
+        window.userLocationIntervalId = null;
+      }
+      window.lastKnownPosition = null;
+
       // remove waitingUsers record if helper available
       if (typeof window.removeThisWaitingUser === 'function') {
         window.removeThisWaitingUser().catch(err => console.warn("remove waiting user failed", err));
@@ -1104,25 +1299,73 @@
       if (!silent) updateLocStatus("off");
     }
 
+    // Replace the existing setupUserLocationControls() function with this version
     function setupUserLocationControls() {
       const checkbox = document.getElementById('loc-toggle');
       if (!checkbox) return;
 
+      // Force initial state to "No" on page load / refresh
+      checkbox.checked = false;
+
+      const modal = document.getElementById('destination-modal');
+      const modalSelect = document.getElementById('modal-destination');
+      const modalConfirm = document.getElementById('modal-confirm');
+      const modalCancel = document.getElementById('modal-cancel');
+      const globalSelect = document.getElementById('to-select');
+
+      function openModal() {
+        if (!modal) return;
+        modal.style.display = 'block';
+        modal.setAttribute('aria-hidden', 'false');
+        setTimeout(() => modalSelect && modalSelect.focus(), 50);
+      }
+      function closeModal() {
+        if (!modal) return;
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+      }
+
+      // Confirm: save destination, filter markers, persist destination, then enable tracking
+      if (modalConfirm && modalSelect) {
+        modalConfirm.addEventListener('click', async () => {
+          const val = modalSelect.value;
+          if (!val) {
+            alert('Please select a destination to continue.');
+            modalSelect.focus();
+            return;
+          }
+          if (globalSelect) globalSelect.value = val;
+
+          if (typeof window.setUserDestination === 'function') {
+            try { await window.setUserDestination(val); } catch (e) { console.warn('Failed to save destination:', e); }
+          }
+
+          if (typeof filterMarkersByRoute === 'function') filterMarkersByRoute(val);
+
+          closeModal();
+          enableLocationTracking();
+        });
+      }
+
+      // Cancel: close modal and uncheck toggle (user aborted)
+      if (modalCancel) {
+        modalCancel.addEventListener('click', () => {
+          closeModal();
+          // make sure this is treated as user turning it off
+          checkbox.checked = false;
+          updateLocStatus('off');
+          disableLocationTracking();
+        });
+      }
+
+      // Permissions API handling: update status only, do NOT auto-check or auto-enable
       if (navigator.permissions && navigator.permissions.query) {
         navigator.permissions.query({ name: 'geolocation' }).then((perm) => {
           updateLocStatus(perm.state);
-          if (perm.state === 'granted') {
-            checkbox.checked = true;
-            enableLocationTracking();
-          } else {
-            checkbox.checked = false;
-          }
+          // do not auto-check or enable even if permission is granted
           perm.onchange = function () {
             updateLocStatus(perm.state);
-            if (perm.state === 'granted') {
-              checkbox.checked = true;
-              enableLocationTracking();
-            } else {
+            if (perm.state === 'denied') {
               checkbox.checked = false;
               disableLocationTracking(true);
             }
@@ -1132,34 +1375,84 @@
         updateLocStatus('unknown');
       }
 
+      // Always show the modal when the user toggles the checkbox ON
       checkbox.addEventListener('change', function () {
-        if (this.checked) enableLocationTracking(); else disableLocationTracking();
+        if (this.checked) {
+          // always prompt for destination first; do not enable tracking until Confirm
+          openModal();
+        } else {
+          // user turned it off
+          closeModal();
+          disableLocationTracking();
+        }
+      });
+
+      // Allow Esc to close modal and cancel the action
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal && modal.style.display === 'block') {
+          closeModal();
+          checkbox.checked = false;
+          updateLocStatus('off');
+          disableLocationTracking();
+        }
       });
     }
 
-    // Function to create waiting area overlays (single, consolidated)
-    function createWaitingAreas() {
-      // clear existing if any
-      Object.values(window.barangayCircles || {}).forEach(c => c.setMap(null));
-      Object.values(window.barangayLabels || {}).forEach(l => {
-        if (l && l.overlay && typeof l.overlay.setMap === 'function') l.overlay.setMap(null);
+    // Replace or add after the createWaitingAreas() function (inside the Google Maps and Markers <script>)
+    function toggleOverlays(show) {
+      // Update the global flag so Firebase listener respects it
+      showWaitingAreasEnabled = Boolean(show);
+      
+      // Re-apply visibility based on toggle state AND waitingCount
+      Object.entries(window.barangayAreas || {}).forEach(([name, area]) => {
+        const circle = window.barangayCircles && window.barangayCircles[name];
+        const label = window.barangayLabels && window.barangayLabels[name];
+        
+        // Show only if toggle is ON and waitingCount > 0
+        const isVisible = show && area.waitingCount > 0;
+        
+        if (circle) {
+          try { circle.setVisible(isVisible); } catch (e) {}
+        }
+        if (label && label.overlay) {
+          try { label.overlay.setMap(isVisible ? map : null); } catch (e) {}
+        }
       });
+    }
+
+    // Wire the checkbox to the toggle (ensure this runs after DOM elements exist)
+    (function attachWaitingToggle() {
+      const waitingToggle = document.getElementById('waiting-areas-toggle');
+      if (!waitingToggle) return;
+      
+      // ensure overlays start hidden (toggle starts unchecked)
+      showWaitingAreasEnabled = false;
+      toggleOverlays(false);
+      
+      waitingToggle.addEventListener('change', function (e) {
+        toggleOverlays(Boolean(e.target.checked));
+      });
+    })();
+
+    function createWaitingAreas() {
+      // clear existing overlays if any
+      Object.values(window.barangayCircles || {}).forEach(c => { try { c.setMap(null); } catch(e){} });
+      Object.values(window.barangayLabels || {}).forEach(l => { try { if (l && l.overlay) l.overlay.setMap(null); } catch(e){} });
       window.barangayCircles = {};
       window.barangayLabels = {};
 
       Object.entries(window.barangayAreas || {}).forEach(([name, data]) => {
         const circle = new google.maps.Circle({
           strokeColor: '#FF6B6B',
-          strokeOpacity: 0.8,
+          strokeOpacity: 0.9,
           strokeWeight: 2,
           fillColor: '#FF6B6B',
-          fillOpacity: 0.15,
+          fillOpacity: 0.12,
           map: map,
           center: { lat: data.lat, lng: data.lng },
-          radius: data.radius
+          radius: Number(data.radius) || 300
         });
-        // start hidden
-        circle.setVisible(false);
+        circle.setVisible(false); // start hidden
 
         const labelDiv = document.createElement('div');
         labelDiv.className = 'waiting-count-label';
@@ -1173,57 +1466,90 @@
           const proj = this.getProjection();
           if (!proj) return;
           const pos = proj.fromLatLngToDivPixel(new google.maps.LatLng(data.lat, data.lng));
-          labelDiv.style.left = (pos.x - (labelDiv.offsetWidth/2)) + 'px';
-          labelDiv.style.top = (pos.y - (labelDiv.offsetHeight/2)) + 'px';
+          labelDiv.style.left = (pos.x - (labelDiv.offsetWidth / 2)) + 'px';
+          labelDiv.style.top = (pos.y - (labelDiv.offsetHeight / 2)) + 'px';
         };
         overlay.onRemove = function() {
           if (labelDiv.parentElement) labelDiv.parentElement.removeChild(labelDiv);
         };
-        // start hidden
-        overlay.setMap(null);
+        overlay.setMap(null); // start hidden
 
         window.barangayCircles[name] = circle;
         window.barangayLabels[name] = { overlay: overlay, element: labelDiv };
       });
+
+      // ensure labels reposition after map interactions
+      if (map && !createWaitingAreas._idleListenerAdded) {
+        google.maps.event.addListener(map, 'idle', function() {
+          Object.values(window.barangayLabels || {}).forEach(lbl => {
+            try { if (lbl && lbl.overlay && lbl.overlay.getMap()) lbl.overlay.draw(); } catch(e){}
+          });
+        });
+        createWaitingAreas._idleListenerAdded = true;
+      }
     }
 
-    // Toggle overlays: show/hide circles and label overlays
-    function toggleOverlays(show) {
-      Object.values(window.barangayCircles || {}).forEach(circle => circle.setVisible(Boolean(show)));
-      Object.values(window.barangayLabels || {}).forEach(labelObj => {
-        if (labelObj && labelObj.overlay && typeof labelObj.overlay.setMap === 'function') {
-          labelObj.overlay.setMap(show ? map : null);
+    // Polling control for waiting-area visibility
+    window.waitingAreasPollIntervalId = null;
+
+    function applyWaitingAreasFromCounts() {
+      const enabled = document.getElementById('waiting-areas-toggle')?.checked === true;
+      Object.entries(window.barangayAreas || {}).forEach(([name, area]) => {
+        const circle = window.barangayCircles && window.barangayCircles[name];
+        const label = window.barangayLabels && window.barangayLabels[name];
+        const shouldShow = enabled && (Number(area.waitingCount || 0) > 0);
+
+        if (circle) {
+          try { circle.setVisible(shouldShow); } catch (e) { console.warn(e); }
+        }
+        if (label && label.overlay) {
+          try { label.overlay.setMap(shouldShow ? map : null); } catch (e) { console.warn(e); }
         }
       });
     }
 
-    // Attach single working listener to waiting areas checkbox
-    document.addEventListener('DOMContentLoaded', function () {
-      const waitingToggle = document.getElementById('waiting-areas-toggle');
-      if (waitingToggle) {
-        waitingToggle.addEventListener('change', function (e) {
-          toggleOverlays(e.target.checked);
-        });
-        // ensure overlays start hidden
-        toggleOverlays(false);
+    function startWaitingAreasPolling() {
+      // immediate apply
+      applyWaitingAreasFromCounts();
+      // clear existing interval if any
+      if (window.waitingAreasPollIntervalId) {
+        clearInterval(window.waitingAreasPollIntervalId);
+        window.waitingAreasPollIntervalId = null;
       }
-    });
-  </script>
-
-  <!-- Hamburger menu toggle for mobile -->
-  <script>
-    function toggleMenu() {
-      document.getElementById('navLinks').classList.toggle('show');
+      // poll every 5 seconds (reverted from 10s)
+      window.waitingAreasPollIntervalId = setInterval(applyWaitingAreasFromCounts, 10000);
     }
 
-    // Optional: Close menu when a link is clicked (for better UX)
-    document.addEventListener('DOMContentLoaded', function () {
-      document.querySelectorAll('.nav-links a').forEach(link => {
-        link.addEventListener('click', () => {
-          document.getElementById('navLinks').classList.remove('show');
-        });
+    function stopWaitingAreasPolling() {
+      if (window.waitingAreasPollIntervalId) {
+        clearInterval(window.waitingAreasPollIntervalId);
+        window.waitingAreasPollIntervalId = null;
+      }
+      // hide all overlays when polling stops
+      Object.keys(window.barangayAreas || {}).forEach(name => {
+        const circle = window.barangayCircles && window.barangayCircles[name];
+        const label = window.barangayLabels && window.barangayLabels[name];
+        if (circle) try { circle.setVisible(false); } catch (e) {}
+        if (label && label.overlay) try { label.overlay.setMap(null); } catch (e) {}
       });
-    });
+    }
+
+    // Attach listener to the toggle and initialize state
+    (function attachWaitingTogglePolling() {
+      const waitingToggle = document.getElementById('waiting-areas-toggle');
+      if (!waitingToggle) return;
+
+      // initialize: ensure overlays hidden until user enables the toggle
+      stopWaitingAreasPolling();
+
+      waitingToggle.addEventListener('change', function (e) {
+        const enabled = Boolean(e.target.checked);
+        if (enabled) startWaitingAreasPolling(); else stopWaitingAreasPolling();
+      });
+
+      // if checkbox is pre-checked on load, start polling
+      if (waitingToggle.checked) startWaitingAreasPolling();
+    })();
   </script>
 </body>
 </html>
