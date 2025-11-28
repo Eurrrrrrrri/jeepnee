@@ -16,6 +16,9 @@
       --white: #ffffff;
       --light-gray: #f1f1f1;
       --cta-hover-blue: #0d47a1;
+
+      /* shared width for the Show/Hide toggle and Back button */
+      --areas-toggle-width: 86px;
     }
 
     * {
@@ -106,6 +109,8 @@
       border-radius: 12px;
       box-shadow: 0 4px 24px rgba(0,0,0,0.07);
       padding: 2rem;
+      display: flex;
+      flex-direction: column;
     }
 
     h2 {
@@ -122,7 +127,7 @@
       border-radius: 10px;
       border: 1px solid #e0e0e0;
       box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-      margin-bottom: 1rem;
+      margin-bottom: 0; /* Remove bottom margin since action bar is next */
     }
 
     button {
@@ -283,6 +288,48 @@
       background-color: var(--cta-hover-blue);
     }
 
+    /* Back button: use CTA hover behavior (override .container rules) */
+    .back-button {
+      background-color: var(--accent-blue);
+      color: white;
+      border: none;
+      border-radius: 999px; /* pill */
+      padding: 8px 16px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      transition: background-color 0.3s;
+      width: var(--areas-toggle-width);
+      min-width: var(--areas-toggle-width);
+      max-width: var(--areas-toggle-width);
+      height: 36px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+    }
+
+    /* More specific selector to override .container button:hover (which is more specific) */
+    .container .back-button:hover {
+      background-color: var(--cta-hover-blue) !important;
+      color: white !important;
+    }
+
+    /* Make the Show/Hide toggle use the same hover background as the Give Feedback CTA.
+       This overrides the generic `.container label:hover` rule. */
+    .container .loc-toggle.areas-toggle-label:hover .loc-slider,
+    .container .loc-toggle.areas-toggle-label .loc-slider:hover {
+      background-color: var(--cta-hover-blue) !important;
+      color: #fff !important;
+    }
+
+    /* Apply same hover effect to the destination dropdown */
+    .container #to-select:hover {
+      background-color: var(--cta-hover-blue) !important;
+      color: white !important;
+    }
+
     /* New: location permission UI */
     .location-section {
       background: #fff;
@@ -353,9 +400,10 @@
       display: inline-block;
       vertical-align: middle;
     }
+    /* remove lift/shadow on hover for base loc-slider; targeted hover will still apply where needed */
     .loc-slider:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 6px 14px rgba(13,71,161,0.06);
+      transform: none !important;
+      box-shadow: none !important;
     }
 
     /* left = "No", right = "Yes" labels */
@@ -418,12 +466,12 @@
     }
 
     @media (max-width: 560px) {
-      .loc-toggle-container { gap: 8px; }
-      .loc-toggle { width: 48px; height: 28px; }
-      .loc-slider::after { width: 18px; height: 18px; top: 4px; left: 4px; }
-      .loc-toggle input:checked + .loc-slider::after { transform: translateX(18px); }
-    }
-
+      .loc-toggle.areas-toggle-label {
+        width: 70px !important; /* Reduce from default width on mobile */
+      }
+      
+      .areas-slider::before { left: 8px; }
+      .areas-slider::after  { right: 8px; }
     /* Waiting area styles */
     .waiting-count-label {
       position: absolute;
@@ -500,45 +548,22 @@
     .toggle-container {
       display: flex;
       align-items: center;
-      cursor: pointer;
+      justify-content: space-between; /* This will space out the elements */
     }
 
-    .toggle {
-      position: relative;
-      width: 60px;
-      height: 34px;
-      background-color: #ccc;
-      border-radius: 34px;
-      transition: background-color 0.4s;
-    }
-
-    .toggle-button {
-      position: absolute;
-      top: 50%;
-      left: 4px;
-      width: 26px;
-      height: 26px;
-      background-color: white;
-      border-radius: 50%;
-      transition: transform 0.4s;
+    .toggle-text {
       display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      color: #333;
-      font-size: 0.8rem;
+      align-items: center; /* Vertically center the text */
     }
 
-    /* Checked state styles */
-    #waiting-areas-toggle.checked {
-      background-color: var(--primary-color);
-    }
-    #waiting-areas-toggle.checked .toggle-button {
-      transform: translateX(26px);
-      color: white;
+    .toggle-text.show {
+      margin-left: auto; /* Push the "Show" text to the right */
     }
 
-    /* Modal styles */
+    .toggle-switch {
+      margin: 0 10px; /* Space between the text and the toggle switch */
+    }
+
     .modal {
       position: fixed;
       top: 0;
@@ -617,6 +642,231 @@
         font-size: 16px;
       }
     }
+
+    /* Facebook-style action bar */
+    .container {
+      display: flex;
+      flex-direction: column;
+    }
+
+    #map {
+      width: 100%;
+      height: 750px;
+      border-radius: 10px;
+      border: 1px solid #e0e0e0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      margin-bottom: 0; /* Remove bottom margin since action bar is next */
+    }
+
+    /* Hover effects for action buttons */
+    .container button:hover,
+    .container label:hover {
+      /* no global hover visual — specific elements will get their own hover rules */
+      background-color: transparent !important;
+      box-shadow: none !important;
+      transform: none !important;
+    }
+
+    /* New styles for Waiting Areas toggle (match Are you waiting as No/Yes) */
+    .loc-toggle.areas-toggle-label {
+      width: var(--areas-toggle-width) !important;
+      height: 36px !important;
+      min-height: 36px !important;
+      max-height: 36px !important;
+      box-sizing: border-box;
+    }
+
+    .loc-toggle.areas-toggle-label .loc-slider {
+      height: 100% !important;
+      box-sizing: border-box;
+    }
+
+    .areas-toggle {
+      width: var(--areas-toggle-width);
+      height: 36px;
+      position: relative;
+      display: inline-block;
+      cursor: pointer;
+      flex: none;
+      z-index: 1;
+    }
+    .areas-toggle input { display: none; }
+
+    .areas-slider {
+      width: 100%;
+      height: 100%;
+      background: #e8f0f7;
+      border-radius: 20px;
+      position: relative;
+      transition: background 0.18s ease, box-shadow 0.18s ease;
+      border: 1px solid rgba(13,71,161,0.08);
+      padding: 0 10px;
+      box-sizing: border-box;
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    /* remove lift/shadow for areas-slider so our CTA hover override takes effect cleanly */
+    .areas-slider:hover {
+      transform: none !important;
+      box-shadow: none !important;
+    }
+
+    /* left = "Hide", right = "Show" labels */
+    .areas-slider::before,
+    .areas-slider::after {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 12px;
+      font-weight: 700;
+      color: rgba(46,61,73,0.75);
+      pointer-events: none;
+      transition: opacity 0.16s ease;
+      white-space: nowrap; /* Prevent text wrapping */
+    }
+    .areas-slider::before { content: "Hide"; left: 12px; opacity: 1; }
+    .areas-slider::after  { content: "Show"; right: 12px; opacity: 0; color: #fff; }
+
+    .areas-knob {
+      position: absolute;
+      top: 50%;
+      left: 6px;
+      transform: translateY(-50%);
+      width: 26px;
+      height: 26px;
+      background: var(--white);
+      border-radius: 50%;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+      transition: left 0.18s ease, box-shadow 0.12s ease;
+      will-change: left;
+    }
+
+    /* Checked state */
+    .areas-toggle input:checked + .areas-slider {
+      background: var(--accent-blue);
+      box-shadow: 0 8px 22px rgba(90,160,210,0.18);
+    }
+    .areas-toggle input:checked + .areas-slider::before { opacity: 0; }
+    .areas-toggle input:checked + .areas-slider::after  { opacity: 1; }
+    .areas-toggle input:checked + .areas-slider .areas-knob {
+      left: calc(100% - 6px - 26px);
+      background: var(--white);
+    }
+
+    /* Waiting areas label (initially hidden) */
+    #no-waiting-message {
+      display: none;
+      color: #FF6B6B;
+      font-weight: 600;
+      font-size: 0.85rem;
+      white-space: nowrap;
+    }
+
+    /* Show waiting areas button (initially hidden) */
+    #show-waiting-areas {
+      display: none;
+      padding: 10px 20px;
+      background-color: var(--accent-blue);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background-color 0.3s;
+    }
+    #show-waiting-areas:hover {
+      background-color: var(--cta-hover-blue);
+    }
+
+    @media (max-width: 768px) {
+      #map {
+        height: 450px;
+      }
+      
+      .container {
+        padding: 1rem;
+      }
+      
+      /* Stack action bar vertically on mobile */
+      .action-bar {
+        flex-direction: column;
+        gap: 8px;
+      }
+      
+      .action-bar > div {
+        width: 100%;
+        justify-content: center;
+      }
+      
+      #to-select {
+        max-width: 150px;
+      }
+    }
+
+    /* Override labels for the waiting-areas toggle only (keep Are you waiting as No/Yes) */
+    .loc-toggle.areas-toggle-label .loc-slider::before {
+      content: "Hide";
+      left: 8px;
+    }
+    .loc-toggle.areas-toggle-label .loc-slider::after {
+      content: "Show";
+      right: 8px;
+      color: #fff;
+    }
+
+    /* Ensure the checked/unchecked opacity behavior matches the base loc-toggle */
+    .loc-toggle.areas-toggle-label input:checked + .loc-slider::before { opacity: 0; }
+    .loc-toggle.areas-toggle-label input:checked + .loc-slider::after  { opacity: 1; }
+    .loc-toggle.areas-toggle-label .loc-slider::before,
+    .loc-toggle.areas-toggle-label .loc-slider::after {
+      transition: opacity 0.16s ease;
+    }
+
+    /* Back button: match toggle widths using the same CSS variable (no runtime dependency) */
+    button[onclick*="index.html"] {
+      width: var(--areas-toggle-width);
+      min-width: var(--areas-toggle-width);
+      max-width: var(--areas-toggle-width);
+      height: 36px;
+      min-height: 36px;
+      max-height: 36px;
+      padding: 8px 16px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+      border-radius: 999px; /* oval / pill shape */
+    }
+
+    /* Ensure dropdown has consistent height */
+    #to-select {
+      height: 36px;
+      min-height: 36px;
+      max-height: 36px;
+      padding: 8px;
+      box-sizing: border-box;
+      /* new: use primary teal background and white text for the destination dropdown */
+      background-color: var(--accent-blue);
+      color: #fff;
+      border: 1px solid rgba(0,0,0,0.08);
+    }
+
+    /* Ensure waiting-areas toggle has consistent height and use the shared width variable */
+    .loc-toggle.areas-toggle-label {
+      width: var(--areas-toggle-width) !important;
+      height: 36px !important;
+      min-height: 36px !important;
+      max-height: 36px !important;
+      box-sizing: border-box;
+    }
+
+    .loc-toggle.areas-toggle-label .loc-slider {
+      height: 100% !important;
+      box-sizing: border-box;
+    }
   </style>
 </head>
 <body>
@@ -691,42 +941,47 @@
   <div class="container">
     <h2>JeepnEE Real-Time Map</h2>
     <div id="map"></div>
-    <!-- Replace both the dropdown and waiting areas sections with this -->
-    <div class="location-section" style="margin-top: 10px;">
-      <div style="display: flex; flex-direction: column; gap: 15px; max-width: 400px; margin: 0 auto;">
-        <!-- Destination dropdown (visible global control used elsewhere) -->
-        <div style="display:flex; align-items:center; justify-content:space-between;">
-          <p style="margin:0;">Select Destination</p>
-          <div style="width: 200px;">
-            <select id="to-select" style="width:100%; padding:8px; border-radius:5px; border:1px solid #ccc;">
-              <option value="">Select destination</option>
-              <option value="San Felipe">San Felipe</option>
-              <option value="Cabangan">Cabangan</option>
-              <option value="Botolan">Botolan</option>
-              <option value="Iba">Iba</option>
-            </select>
-          </div>
-        </div>
-        <!-- Waiting areas toggle -->
-        <div style="display: flex; align-items: center; justify-content: space-between;">
-          <p style="margin: 0;">Show Waiting Areas</p>
-          <div class="loc-toggle-container">
-            <div class="loc-toggle-wrap">
-              <label class="loc-toggle" title="Show waiting areas">
-                <input id="waiting-areas-toggle" type="checkbox" aria-label="Show waiting areas" />
-                <span class="loc-slider" role="switch" aria-checked="false" tabindex="0"></span>
-              </label>
-            </div>
-          </div>
-        </div>
+    
+    <!-- Facebook-style action bar below the map -->
+    <div style="display: flex; align-items: stretch; justify-content: space-around; padding: 16px; border-top: 1px solid #e0e0e0; border-bottom: 1px solid #e0e0e0; background: #fff; margin-bottom: 16px; gap: 16px;">
+      
+      <!-- Back to Index (Like) -->
+      <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 0px;">
+        <span style="font-weight: 600; color: var(--text-color); font-size: 14px;">Back to Index</span>
+        <button onclick="window.location.href='index.html'" class="back-button" aria-label="Back to index">←</button>
       </div>
+ 
+      <!-- Select Destination (Comment) -->
+      <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 8px;">
+        <label style="font-weight: 600; color: var(--text-color); font-size: 14px;">📍 Destination</label>
+        <select id="to-select" style="width: 100%; max-width: 180px; padding: 8px; border-radius: 4px; border: 1px solid #ccc; font-size: 14px;">
+          <option value="">Select</option>
+          <option value="San Felipe">San Felipe</option>
+          <option value="Cabangan">Cabangan</option>
+          <option value="Botolan">Botolan</option>
+          <option value="Iba">Iba</option>
+        </select>
+      </div>
+ 
+      <!-- Show Waiting Areas (Share) -->
+      <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 8px;">
+        <label style="font-weight: 600; color: var(--text-color); font-size: 14px;">👥 Waiting Areas</label>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; justify-content: center;">
+           <label class="loc-toggle areas-toggle-label" title="Show waiting areas" style="margin: 0;">
+             <input id="waiting-areas-toggle" type="checkbox" aria-label="Show waiting areas" />
+             <span class="loc-slider" role="switch" aria-checked="false" tabindex="0"></span>
+           </label>
+           <div id="no-waiting-message" style="display: none; color: #FF6B6B; font-weight: 600; font-size: 0.85rem; white-space: nowrap;">
+             No waiting users
+           </div>
+         </div>
+       </div>
     </div>
-    <button onclick="window.location.href='index.html'">Back to Index</button>
   </div>
 
   <!-- Destination modal (appears when enabling 'Are you waiting?') -->
-  <div id="destination-modal" class="modal" aria-hidden="true" role="dialog" style="display:none;">
-    <div class="modal-backdrop" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);"></div>
+  <div id=  "destination-modal" class="modal" aria-hidden="true" role="dialog" style="display:none;">
+    <div class="modal-backdrop" style="position:fixed;iynset:0;background:rgba(0,0,0,0.45);"></div>
     <div class="modal-panel" role="document" style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:#fff;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,0.2);padding:20px;max-width:360px;width:90%;z-index:10001;">
       <h3 style="margin-bottom:8px;">Select your destination</h3>
       <select id="modal-destination" style="width:100%; padding:10px; border-radius:6px; border:1px solid #ccc; margin-bottom:12px;">
@@ -1494,6 +1749,16 @@
 
     function applyWaitingAreasFromCounts() {
       const enabled = document.getElementById('waiting-areas-toggle')?.checked === true;
+      
+      // Check if any area has waitingCount > 0
+      const hasAnyWaiting = Object.values(window.barangayAreas || {}).some(area => Number(area.waitingCount || 0) > 0);
+      
+      // Show/hide "no waiting users" message
+      const noWaitingMsg = document.getElementById('no-waiting-message');
+      if (noWaitingMsg) {
+        noWaitingMsg.style.display = (enabled && !hasAnyWaiting) ? 'block' : 'none';
+      }
+
       Object.entries(window.barangayAreas || {}).forEach(([name, area]) => {
         const circle = window.barangayCircles && window.barangayCircles[name];
         const label = window.barangayLabels && window.barangayLabels[name];
@@ -1550,6 +1815,102 @@
       // if checkbox is pre-checked on load, start polling
       if (waitingToggle.checked) startWaitingAreasPolling();
     })();
+
+    document.addEventListener('DOMContentLoaded', () => {
+      function matchWaitingToggleToBackButton() {
+        // Keep runtime code limited to matching heights only so the width comes from CSS variables.
+        const backBtn = document.querySelector("button[onclick*=\"index.html\"]");
+        backBtn.style.maxHeight = ht + 'px';
+      }
+
+      matchWaitingToggleToBackButton();
+      window.addEventListener('resize', matchWaitingToggleToBackButton);
+    });
   </script>
+  <script>
+    // Ensure hamburger works: toggle class + accessibility attributes
+    function toggleMenu() {
+      const nav = document.getElementById('navLinks');
+      const btn = document.querySelector('.menu-toggle');
+      if (!nav || !btn) return;
+      const opened = nav.classList.toggle('show');
+      btn.setAttribute('aria-expanded', opened ? 'true' : 'false');
+      nav.setAttribute('aria-hidden', opened ? 'false' : 'true');
+    }
+
+    // Close menu when a nav link is clicked (mobile UX)
+    document.addEventListener('click', (e) => {
+      const nav = document.getElementById('navLinks');
+      const btn = document.querySelector('.menu-toggle');
+      if (!nav || !btn) return;
+      const anchor = e.target.closest('.nav-links a');
+      if (anchor && nav.classList.contains('show')) {
+        nav.classList.remove('show');
+        btn.setAttribute('aria-expanded', 'false');
+        nav.setAttribute('aria-hidden', 'true');
+      }
+    });
+
+    // Initialize ARIA attributes for hamburger and nav
+    (function initHamburger() {
+      const nav = document.getElementById('navLinks');
+      const btn = document.querySelector('.menu-toggle');
+      if (!nav || !btn) return;
+      btn.setAttribute('role', 'button');
+      btn.setAttribute('aria-controls', 'navLinks');
+      btn.setAttribute('aria-expanded', 'false');
+      nav.setAttribute('aria-hidden', 'true');
+    })();
+
+    // Ensure menu closes when resizing to desktop
+    window.addEventListener('resize', () => {
+      const nav = document.getElementById('navLinks');
+      const btn = document.querySelector('.menu-toggle');
+      if (!nav || !btn) return;
+      if (window.innerWidth > 768 && nav.classList.contains('show')) {
+        nav.classList.remove('show');
+        btn.setAttribute('aria-expanded', 'false');
+        nav.setAttribute('aria-hidden', 'true');
+      }
+    });
+  </script>
+<!-- Code injected by live-server -->
+<script>
+	// <![CDATA[  <-- For SVG support
+	if ('WebSocket' in window) {
+		(function () {
+			function refreshCSS() {
+				var sheets = [].slice.call(document.getElementsByTagName("link"));
+				var head = document.getElementsByTagName("head")[0];
+				for (var i = 0; i < sheets.length; ++i) {
+					var elem = sheets[i];
+					var parent = elem.parentElement || head;
+					parent.removeChild(elem);
+					var rel = elem.rel;
+					if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
+						var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
+						elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
+					}
+					parent.appendChild(elem);
+				}
+			}
+			var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
+			var address = protocol + window.location.host + window.location.pathname + '/ws';
+			var socket = new WebSocket(address);
+			socket.onmessage = function (msg) {
+				if ( msg.data == 'reload') window.location.reload();
+				else if (msg.data == 'refreshcss') refreshCSS();
+			};
+			if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer)) {
+				console.log('Live reload enabled.');
+				sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
+			}
+		})();
+	}
+	else {
+		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
+	}
+	// ]]>
+</script>
 </body>
 </html>
