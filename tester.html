@@ -1097,29 +1097,35 @@
         // check if a record already exists so we only set firstSeen once
         const snap = await get(userInfoRef);
         if (!snap.exists()) {
-          // create initial record and set firstSeen to server timestamp
+          // create initial record with categorized structure (NO firstLatitude/firstLongitude yet)
           await set(userInfoRef, {
-            firstSeen: serverTimestamp(),
-            lastSeen: serverTimestamp(),
-            userAgent: ua,
-            language: lang,
-            platform: platform,
-            screenResolution: screenRes,
-            timezone: tz,
-            referrer: referrer,
-            status: 'online',
-            waitingStatus: 'No'
+            firstUseInfo: {
+              firstSeen: serverTimestamp()
+            },
+            currentData: {
+              status: 'online',
+              waitingStatus: 'No',
+              accessCount: 1
+            },
+            deviceInfo: {
+              userAgent: ua,
+              language: lang,
+              platform: platform,
+              screenResolution: screenRes,
+              timezone: tz,
+              referrer: referrer
+            }
           });
         } else {
-          // update metadata + lastSeen (keep firstSeen untouched)
+          // update only currentData and deviceInfo (keep firstUseInfo untouched)
           await update(userInfoRef, {
-            lastSeen: serverTimestamp(),
-            userAgent: ua,
-            language: lang,
-            platform: platform,
-            screenResolution: screenRes,
-            timezone: tz,
-            referrer: referrer
+            'currentData/status': 'online',
+            'deviceInfo/userAgent': ua,
+            'deviceInfo/language': lang,
+            'deviceInfo/platform': platform,
+            'deviceInfo/screenResolution': screenRes,
+            'deviceInfo/timezone': tz,
+            'deviceInfo/referrer': referrer
           });
         }
       } catch (err) {
@@ -1127,21 +1133,50 @@
       }
     }
 
+    // Helper: capture first location when user confirms they are waiting (has permission)
+    async function captureFirstLocation() {
+      try {
+        const snap = await get(userInfoRef);
+        if (snap.exists() && snap.val().firstUseInfo) {
+          // only capture if firstLatitude/firstLongitude don't already exist
+          if (snap.val().firstUseInfo.firstLatitude != null || snap.val().firstUseInfo.firstLongitude != null) {
+            return; // already captured
+          }
+        }
+
+        // get current position (user has already granted permission via geolocation.getCurrentPosition in enableLocationTracking)
+        const position = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
+        });
+
+        const firstLat = position.coords.latitude;
+        const firstLng = position.coords.longitude;
+
+        await update(userInfoRef, {
+          'firstUseInfo/firstLatitude': firstLat,
+          'firstUseInfo/firstLongitude': firstLng
+        });
+      } catch (e) {
+        console.warn('captureFirstLocation failed', e);
+      }
+    }
+
+    // expose for location tracking code to call after permission is granted
+    window.captureFirstLocation = captureFirstLocation;
+
     // Helper: increment access count for this user
     async function incrementAccessCount() {
       try {
         const snap = await get(userInfoRef);
         if (snap.exists()) {
-          const currentCount = snap.val().accessCount || 0;
+          const currentCount = (snap.val().currentData && snap.val().currentData.accessCount) || 0;
           await update(userInfoRef, {
-            accessCount: currentCount + 1,
-            lastSeen: serverTimestamp()
+            'currentData/accessCount': currentCount + 1
           });
         } else {
           // If record doesn't exist yet, set it to 1
           await update(userInfoRef, {
-            accessCount: 1,
-            lastSeen: serverTimestamp()
+            'currentData/accessCount': 1
           });
         }
       } catch (err) {
@@ -1149,10 +1184,7 @@
       }
     }
 
-    // ensure a record exists immediately
-    // createOrUpdateUserInfo().catch(() => {});
-    // incrementAccessCount().catch(() => {});
-    // ensure record exists, increment access count, then sync waitingStatus ONCE to local toggle
+    // ensure a record exists, increment access count, then sync waitingStatus ONCE to local toggle
     (async function initUserInfoAndSyncWaiting() {
       try {
         await createOrUpdateUserInfo();
@@ -1165,10 +1197,10 @@
         const checkbox = document.getElementById('loc-toggle');
         const desired = (checkbox && checkbox.checked) ? 'Yes' : 'No';
         const snap = await get(userInfoRef);
-        const current = snap.exists() ? snap.val().waitingStatus : null;
+        const current = snap.exists() && snap.val().currentData ? snap.val().currentData.waitingStatus : null;
         // write only if different to avoid unnecessary writes
         if (current !== desired) {
-          await update(userInfoRef, { waitingStatus: desired, lastSeen: serverTimestamp() });
+          await update(userInfoRef, { 'currentData/waitingStatus': desired });
         }
       } catch (err) {
         console.warn('syncWaitingStatusToToggleOnce failed', err);
@@ -1179,8 +1211,7 @@
     async function setUserOnlineStatus(status) {
       try {
         await update(userInfoRef, {
-          status: status,
-          lastSeen: serverTimestamp()
+          'currentData/status': status
         });
       } catch (err) {
         console.warn("setUserOnlineStatus failed", err);
@@ -1191,7 +1222,7 @@
     window.setUserWaitingStatus = async function (val) {
       try {
         const v = val === 'Yes' ? 'Yes' : 'No';
-        await update(userInfoRef, { waitingStatus: v, lastSeen: serverTimestamp() });
+        await update(userInfoRef, { 'currentData/waitingStatus': v });
       } catch (err) {
         console.warn("setUserWaitingStatus failed", err);
       }
@@ -1205,23 +1236,23 @@
         setUserOnlineStatus('online').catch(() => {});
         try {
           // schedule offline update on disconnect
-          onDisconnect(userInfoRef).update({ status: 'offline', lastSeen: serverTimestamp() }).catch(() => {});
+          onDisconnect(userInfoRef).update({ 'currentData/status': 'offline' }).catch(() => {});
         } catch (e) {
           // ignore if SDK variation throws
         }
       } else {
-        // no active connection -> rely on server onDisconnect or client-side lastSeen updates
+        // no active connection -> rely on server onDisconnect or client-side updates
       }
     });
 
-    // Drive "Currently Online Devices" from userInformation.{id}.status
+    // Drive "Currently Online Devices" from userInformation.{id}.currentData.status
     const userInformationRef = ref(database, 'userInformation');
     onValue(userInformationRef, (snapshot) => {
       try {
         const data = snapshot.val() || {};
         let onlineCount = 0;
         Object.values(data).forEach(u => {
-          if (u && u.status === 'online') onlineCount++;
+          if (u && u.currentData && u.currentData.status === 'online') onlineCount++;
         });
         const el = document.getElementById('onlineCount');
         if (el) el.textContent = String(onlineCount);
@@ -1230,34 +1261,26 @@
       }
     });
 
-    let showWaitingAreasEnabled = false; // track user's toggle preference
+    let showWaitingAreasEnabled = false;
 
-    // Keep overlays in sync with DB (update counts and show/hide based on count AND toggle state)
-    onValue(waitingUsersRef, (snapshot) => {
-      const waitingUsersRaw = snapshot.val() || {};
-      const now = Date.now();
-      const STALE_MS = 3 * 60 * 1000; // 3 minutes
-
-      // Collect stale ids to remove
-      const staleIds = [];
-      Object.entries(waitingUsersRaw).forEach(([id, user]) => {
-        const ts = Number(user?.timestamp) || 0;
-        if (ts && now - ts > STALE_MS) staleIds.push(id);
-      });
-
-      // Remove stale entries
-      staleIds.forEach(id => {
-        remove(ref(database, `waitingUsers/${id}`)).catch(() => {});
-        delete waitingUsersRaw[id];
-      });
+    // Keep overlays in sync with DB — now reads from userInformation with new categorized structure
+    onValue(userInformationRef, (snapshot) => {
+      const allUsers = snapshot.val() || {};
 
       // reset counts
       Object.values(window.barangayAreas || {}).forEach(a => a.waitingCount = 0);
 
-      // count users per area
-      Object.values(waitingUsersRaw).forEach(user => {
-        if (!user || user.latitude == null || user.longitude == null) return;
-        const u = new google.maps.LatLng(user.latitude, user.longitude);
+      // count users per area (only those with waitingStatus='Yes' in currentData)
+      Object.values(allUsers).forEach(user => {
+        // Check new structure: user.currentData.waitingStatus must be 'Yes'
+        if (!user || !user.currentData || user.currentData.waitingStatus !== 'Yes') return;
+        
+        // Get coordinates from new structure: currentData.latitude/longitude
+        const lat = user.currentData.latitude;
+        const lng = user.currentData.longitude;
+        if (lat == null || lng == null) return;
+        
+        const u = new google.maps.LatLng(lat, lng);
         Object.entries(window.barangayAreas || {}).forEach(([name, area]) => {
           const c = new google.maps.LatLng(area.lat, area.lng);
           const d = google.maps.geometry.spherical.computeDistanceBetween(u, c);
@@ -1272,9 +1295,6 @@
           label.element.textContent = String(area.waitingCount || 0);
         }
 
-        // Show circle and overlay only if:
-        // 1. Toggle is ON (showWaitingAreasEnabled === true)
-        // 2. AND waitingCount > 0
         const circle = window.barangayCircles && window.barangayCircles[name];
         const isVisible = showWaitingAreasEnabled && area.waitingCount > 0;
 
@@ -1290,17 +1310,7 @@
       });
     });
 
-    // persist device id so a single device writes a single record
-    function getOrCreateWaitingUserId() {
-      let id = localStorage.getItem('waitingUserId');
-      if (!id) {
-        id = 'user_' + Math.random().toString(36).substr(2,9);
-        localStorage.setItem('waitingUserId', id);
-      }
-      return id;
-    }
-
-    // update this device's waiting user record → now writes to userInformation
+    // update this device's waiting user record → now writes to userInformation.currentData
     async function updateUserLocation(position) {
       try {
         if (!position || !position.coords) return;
@@ -1309,11 +1319,11 @@
         const THROTTLE_MS = 30_000;
         if (now - lastSent < THROTTLE_MS) return;
 
-        // Write location directly to userInformation (not waitingUsers)
+        // Write location directly to userInformation.currentData
         await update(userInfoRef, {
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          locationTimestamp: serverTimestamp()
+          'currentData/latitude': position.coords.latitude,
+          'currentData/longitude': position.coords.longitude,
+          'currentData/locationTimestamp': serverTimestamp()
         });
 
         localStorage.setItem('waitingUserLastSent', String(now));
@@ -1326,22 +1336,19 @@
     async function removeThisWaitingUser() {
       try {
         // NO-OP: preserve latitude/longitude/locationTimestamp/destination when user toggles off.
-        // Historically we cleared these fields when users stopped sharing; requirement changed —
-        // keep the latest values for record-keeping. This function intentionally does nothing.
         return;
       } catch (err) {
         console.error("removeThisWaitingUser error:", err);
       }
     }
 
-    // set destination in userInformation (not waitingUsers)
+    // set destination in userInformation.currentData (not waitingUsers)
     async function setUserDestination(destination) {
       try {
         if (!destination) return;
-        // write destination string under userInformation/{id}/destination
+        // write destination string under userInformation/{id}/currentData/destination
         await update(userInfoRef, {
-          destination: destination,
-          lastSeen: serverTimestamp()
+          'currentData/destination': destination
         });
       } catch (err) {
         console.error("setUserDestination error:", err);
@@ -1663,6 +1670,11 @@
             window.updateUserLocation(pos); // initial update
           }
 
+          // Capture first location now that user has granted permission
+          if (typeof window.captureFirstLocation === 'function') {
+            window.captureFirstLocation().catch(() => {});
+          }
+
           // ensure we have a single periodic writer every 10s
           if (window.userLocationIntervalId) {
             clearInterval(window.userLocationIntervalId);
@@ -1814,12 +1826,13 @@
           };
         }).catch(() => updateLocStatus('unknown'));
       } else {
+
         updateLocStatus('unknown');
       }
 
       // Always show the modal when the user toggles the checkbox ON
       checkbox.addEventListener('change', function () {
-        if (this.checked) {
+        if ( this.checked) {
           // always prompt for destination first; do not enable tracking until Confirm
           openModal();
         } else {
@@ -2073,7 +2086,7 @@
 
 
 
-sole.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');	}		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');	// ]]>	else {script>	}	}	}		})();			}sole.log('Live reload enabled.');				sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);	if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer)) {				console.log('Live reload enabled.');		})();			}				if ( msg.data == 'reload') window.location.reload();			socket.onmessage = function (msg) {			var socket = new WebSocket(address);			var address = protocol + window.location.host + window.location.pathname + '/ws';			var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';			}				}					parent.appendChild(elem);					}						elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());						var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');					if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {					var rel = elem.rel;					parent.removeChild(elem);					var parent = elem.parentElement || head;					var elem = sheets[i];				else if (msg.data == 'refreshcss') refreshCSS();				for (var i = 0; i < sheets.length; ++i) {				var head = document.getElementsByTagName("head")[0];				var sheets = [].slice.call(document.getElementsByTagName("link"));			function refreshCSS() {		(function () {	if ('WebSocket' in window) {	// <![CDATA[  <-- For SVG support<script><!-- Code injected by live-server -->  </script></body>
+sole.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');	}		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');	// ]]>	else {script>	}	}	}		})();			}sole.log('Live reload enabled.');				sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);	if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {				console.log('Live reload enabled.');		})();			}				if ( msg.data == 'reload') window.location.reload();			socket.onmessage = function (msg) {			var socket = new WebSocket(address);			var address = protocol + window.location.host + window.location.pathname + '/ws';			var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';			}				}					parent.appendChild(elem);					}						elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());						var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');					if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {					var rel = elem.rel;					parent.removeChild(elem);					var parent = elem.parentElement || head;					var elem = sheets[i];				else if (msg.data == 'refreshcss') refreshCSS();				for (var i = 0; i < sheets.length; ++i) {				var head = document.getElementsByTagName("head")[0];				var sheets = [].slice.call(document.getElementsByTagName("link"));			function refreshCSS() {		(function () {	if ('WebSocket' in window) {	// <![CDATA[  <-- For SVG support<script><!-- Code injected by live-server -->  </script></body>
 </html>
 
 
@@ -2085,5 +2098,6 @@ sole.error('Upgrade your browser. This Browser is NOT supported WebSocket for Li
 
 
 
-</html>	}		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');	}		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');	// ]]>	else {script>	}	}	}		})();			}sole.log('Live reload enabled.');				sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);	if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer)) {				console.log('Live reload enabled.');		})();			}				if ( msg.data == 'reload') window.location.reload();			socket.onmessage = function (msg) {			var socket = new WebSocket(address);			var address = protocol + window.location.host + window.location.pathname + '/ws';			var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';			}				}					parent.appendChild(elem);					}						elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());						var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');					if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {					var rel = elem.rel;					parent.removeChild(elem);					var parent = elem.parentElement || head;					var elem = sheets[i];				else if (msg.data == 'refreshcss') refreshCSS();				for (var i = 0; i < sheets.length; ++i) {				var head = document.getElementsByTagName("head")[0];				var sheets = [].slice.call(document.getElementsByTagName("link"));			function refreshCSS() {		(function () {	if ('WebSocket' in window) {	// <![CDATA[  <-- For SVG support<script><!-- Code injected by live-server -->  </script></body>
-</html>	}		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');	}		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');	// ]]>	else {script>	}	}	}		})();			}sole.log('Live reload enabled.');				sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);	if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer)) {				console.log('Live reload enabled.');		})();			}				if ( msg.data == 'reload') window.location.reload();			socket.onmessage = function (msg) {			var socket = new WebSocket(address);			var address = protocol + window.location.host + window.location.pathname + '/ws';			var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';			}				}					parent.appendChild(elem);					}						elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());						var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');					if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {					var rel = elem.rel;					parent.removeChild(elem);					var parent = elem.parentElement || head;					var elem = sheets[i];				else if (msg.data == 'refreshcss') refreshCSS();				for (var i = 0; i < sheets.length; ++i) {				var head = document.getElementsByTagName("head")[0];				var sheets = [].slice.call(document.getElementsByTagName("link"));			function refreshCSS() {		(function () {	if ('WebSocket' in window) {	// <![CDATA[  <-- For SVG support<script><!-- Code injected by live-server -->  </script></body>
+</html>	}		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');	}		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');	// ]]>	else {script>	}	}	}		})();			}sole.log('Live reload enabled.');				sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);	if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {				console.log('Live reload enabled.');		})();			}				if ( msg.data == 'reload') window.location.reload();			socket.onmessage = function (msg) {			var socket = new WebSocket(address);			var address = protocol + window.location.host + window.location.pathname + '/ws';			var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';			}				}					parent.appendChild(elem);					}						elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());						var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');					if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {					var rel = elem.rel;					parent.removeChild(elem);					var parent = elem.parentElement || head;					var elem = sheets[i];				else if (msg.data == 'refreshcss') refreshCSS();				for (var i = 0; i < sheets.length; ++i) {				var head = document.getElementsByTagName("head")[0];				var sheets = [].slice.call(document.getElementsByTagName("link"));			function refreshCSS() {		(function () {	if ('WebSocket' in window) {	// <![CDATA[  <-- For SVG support<script><!-- Code injected by live-server -->  </script></body>
+</html>	}		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');	}		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');	// ]]>	else {script>	}	}	}		})();			}sole.log('Live reload enabled.');				sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);	if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {				console.log('Live reload enabled.');		})();			}				if ( msg.data == 'reload') window.location.reload();			socket.onmessage = function (msg) {			var socket = new WebSocket(address);			var address = protocol + window.location.host + window.location.pathname + '/ws';			var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';			}				}					parent.appendChild(elem);					}						elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());						var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');					if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {					var rel = elem.rel;					parent.removeChild(elem);					var parent = elem.parentElement || head;					var elem = sheets[i];				else if (msg.data == 'refreshcss') refreshCSS();				for (var i = 0; i < sheets.length; ++i) {				var head = document.getElementsByTagName("head")[0];				var sheets = [].slice.call(document.getElementsByTagName("link"));			function refreshCSS() {		(function () {	if ('WebSocket' in window) {	// <![CDATA[  <-- For SVG support<script><!-- Code injected by live-server -->  </script></body>
+</html>
