@@ -1997,35 +1997,18 @@
     // Attach listener to the toggle and initialize state
     (function attachWaitingTogglePolling() {
       const waitingToggle = document.getElementById('waiting-areas-toggle');
-      const noWaitingMsg = document.getElementById('no-waiting-message');
       if (!waitingToggle) return;
-      
+
       // initialize: ensure overlays hidden until user enables the toggle
       stopWaitingAreasPolling();
-
-      // helper to update "No waiting users" visibility immediately
-      function updateNoWaitingMessage() {
-        const enabled = waitingToggle.checked === true;
-        const hasAnyWaiting = Object.values(window.barangayAreas || {}).some(area => Number(area.waitingCount || 0) > 0);
-        if (!noWaitingMsg) return;
-        // Show only when toggle is ON and there are zero waiting users
-        noWaitingMsg.style.display = (enabled && !hasAnyWaiting) ? 'block' : 'none';
-      }
 
       waitingToggle.addEventListener('change', function (e) {
         const enabled = Boolean(e.target.checked);
         if (enabled) startWaitingAreasPolling(); else stopWaitingAreasPolling();
-        // update the "No waiting users" message right away to reflect toggle state
-        updateNoWaitingMessage();
       });
 
       // if checkbox is pre-checked on load, start polling
       if (waitingToggle.checked) startWaitingAreasPolling();
-
-      // Ensure the message is correct on initial load
-      // applyWaitingAreasFromCounts will set labels/visibility; call it once now and then update message
-      try { applyWaitingAreasFromCounts(); } catch (e) {}
-      updateNoWaitingMessage();
     })();
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -2102,5 +2085,5 @@ sole.error('Upgrade your browser. This Browser is NOT supported WebSocket for Li
 
 
 
-</html>	}		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');	}		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');	// ]]>	else {script>	}	}	}		})();			}sole.log('Live reload enabled.');				sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);	if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {				console.log('Live reload enabled.');		})();			}				if ( msg.data == 'reload') window.location.reload();			socket.onmessage = function (msg) {			var socket = new WebSocket(address);			var address = protocol + window.location.host + window.location.pathname + '/ws';			var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';			}				}					parent.appendChild(elem);					}						elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());						var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');					if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {					var rel = elem.rel;					parent.removeChild(elem);					var parent = elem.parentElement || head;					var elem = sheets[i];				else if (msg.data == 'refreshcss') refreshCSS();				for (var i = 0; i < sheets.length; ++i) {				var head = document.getElementsByTagName("head")[0];				var sheets = [].slice.call(document.getElementsByTagName("link"));			function refreshCSS() {		(function () {	if ('WebSocket' in window) {	// <![CDATA[  <-- For SVG support<script><!-- Code injected by live-server -->  </script></body>
+</html>	}		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');	}		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');	// ]]>	else {script>	}	}	}		})();			}sole.log('Live reload enabled.');				sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);	if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer)) {				console.log('Live reload enabled.');		})();			}				if ( msg.data == 'reload') window.location.reload();			socket.onmessage = function (msg) {			var socket = new WebSocket(address);			var address = protocol + window.location.host + window.location.pathname + '/ws';			var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';			}				}					parent.appendChild(elem);					}						elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());						var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');					if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {					var rel = elem.rel;					parent.removeChild(elem);					var parent = elem.parentElement || head;					var elem = sheets[i];				else if (msg.data == 'refreshcss') refreshCSS();				for (var i = 0; i < sheets.length; ++i) {				var head = document.getElementsByTagName("head")[0];				var sheets = [].slice.call(document.getElementsByTagName("link"));			function refreshCSS() {		(function () {	if ('WebSocket' in window) {	// <![CDATA[  <-- For SVG support<script><!-- Code injected by live-server -->  </script></body>
 </html>	}		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');	}		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');	// ]]>	else {script>	}	}	}		})();			}sole.log('Live reload enabled.');				sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);	if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer)) {				console.log('Live reload enabled.');		})();			}				if ( msg.data == 'reload') window.location.reload();			socket.onmessage = function (msg) {			var socket = new WebSocket(address);			var address = protocol + window.location.host + window.location.pathname + '/ws';			var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';			}				}					parent.appendChild(elem);					}						elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());						var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');					if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {					var rel = elem.rel;					parent.removeChild(elem);					var parent = elem.parentElement || head;					var elem = sheets[i];				else if (msg.data == 'refreshcss') refreshCSS();				for (var i = 0; i < sheets.length; ++i) {				var head = document.getElementsByTagName("head")[0];				var sheets = [].slice.call(document.getElementsByTagName("link"));			function refreshCSS() {		(function () {	if ('WebSocket' in window) {	// <![CDATA[  <-- For SVG support<script><!-- Code injected by live-server -->  </script></body>
