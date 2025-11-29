@@ -16,6 +16,9 @@
       --white: #ffffff;
       --light-gray: #f1f1f1;
       --cta-hover-blue: #0d47a1;
+
+      /* shared width for the Show/Hide toggle and Back button */
+      --areas-toggle-width: 86px;
     }
 
     * {
@@ -106,6 +109,8 @@
       border-radius: 12px;
       box-shadow: 0 4px 24px rgba(0,0,0,0.07);
       padding: 2rem;
+      display: flex;
+      flex-direction: column;
     }
 
     h2 {
@@ -122,7 +127,7 @@
       border-radius: 10px;
       border: 1px solid #e0e0e0;
       box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-      margin-bottom: 1rem;
+      margin-bottom: 0; /* Remove bottom margin since action bar is next */
     }
 
     button {
@@ -283,6 +288,48 @@
       background-color: var(--cta-hover-blue);
     }
 
+    /* Back button: use CTA hover behavior (override .container rules) */
+    .back-button {
+      background-color: var(--accent-blue);
+      color: white;
+      border: none;
+      border-radius: 999px; /* pill */
+      padding: 8px 16px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      transition: background-color 0.3s;
+      width: var(--areas-toggle-width);
+      min-width: var(--areas-toggle-width);
+      max-width: var(--areas-toggle-width);
+      height: 36px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+    }
+
+    /* More specific selector to override .container button:hover (which is more specific) */
+    .container .back-button:hover {
+      background-color: var(--cta-hover-blue) !important;
+      color: white !important;
+    }
+
+    /* Make the Show/Hide toggle use the same hover background as the Give Feedback CTA.
+       This overrides the generic `.container label:hover` rule. */
+    .container .loc-toggle.areas-toggle-label:hover .loc-slider,
+    .container .loc-toggle.areas-toggle-label .loc-slider:hover {
+      background-color: var(--cta-hover-blue) !important;
+      color: #fff !important;
+    }
+
+    /* Apply same hover effect to the destination dropdown */
+    .container #to-select:hover {
+      background-color: var(--cta-hover-blue) !important;
+      color: white !important;
+    }
+
     /* New: location permission UI */
     .location-section {
       background: #fff;
@@ -353,9 +400,10 @@
       display: inline-block;
       vertical-align: middle;
     }
+    /* remove lift/shadow on hover for base loc-slider; targeted hover will still apply where needed */
     .loc-slider:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 6px 14px rgba(13,71,161,0.06);
+      transform: none !important;
+      box-shadow: none !important;
     }
 
     /* left = "No", right = "Yes" labels */
@@ -418,12 +466,12 @@
     }
 
     @media (max-width: 560px) {
-      .loc-toggle-container { gap: 8px; }
-      .loc-toggle { width: 48px; height: 28px; }
-      .loc-slider::after { width: 18px; height: 18px; top: 4px; left: 4px; }
-      .loc-toggle input:checked + .loc-slider::after { transform: translateX(18px); }
-    }
-
+      .loc-toggle.areas-toggle-label {
+        width: 70px !important; /* Reduce from default width on mobile */
+      }
+      
+      .areas-slider::before { left: 8px; }
+      .areas-slider::after  { right: 8px; }
     /* Waiting area styles */
     .waiting-count-label {
       position: absolute;
@@ -500,42 +548,324 @@
     .toggle-container {
       display: flex;
       align-items: center;
-      cursor: pointer;
+      justify-content: space-between; /* This will space out the elements */
     }
 
-    .toggle {
-      position: relative;
-      width: 60px;
-      height: 34px;
-      background-color: #ccc;
-      border-radius: 34px;
-      transition: background-color 0.4s;
+    .toggle-text {
+      display: flex;
+      align-items: center; /* Vertically center the text */
     }
 
-    .toggle-button {
-      position: absolute;
-      top: 50%;
-      left: 4px;
-      width: 26px;
-      height: 26px;
-      background-color: white;
-      border-radius: 50%;
-      transition: transform 0.4s;
+    .toggle-text.show {
+      margin-left: auto; /* Push the "Show" text to the right */
+    }
+
+    .toggle-switch {
+      margin: 0 10px; /* Space between the text and the toggle switch */
+    }
+
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: bold;
-      color: #333;
-      font-size: 0.8rem;
+      z-index: 10000;
     }
 
-    /* Checked state styles */
-    #waiting-areas-toggle.checked {
-      background-color: var(--primary-color);
+    .modal[aria-hidden="true"] {
+      display: none;
     }
-    #waiting-areas-toggle.checked .toggle-button {
-      transform: translateX(26px);
+
+    .modal-panel {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+      padding: 2rem;
+      max-width: 400px;
+      width: 90%;
+      position: relative;
+      z-index: 10001;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      z-index: 10000;
+    }
+
+    .modal h3 {
+      margin-bottom: 1rem;
+      font-size: 1.25rem;
+      color: #1a3d4c;
+      text-align: center;
+    }
+
+    .modal select {
+      width: 100%;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      margin-bottom: 1rem;
+    }
+
+    .modal button {
+      padding: 10px 20px;
+      background-color: var(--accent-blue);
       color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background-color 0.3s;
+    }
+    .modal button:hover {
+      background-color: var(--cta-hover-blue);
+    }
+
+    /* Responsive adjustments for modal */
+    @media (max-width: 560px) {
+      .modal-panel {
+        padding: 1.5rem;
+      }
+      .modal h3 {
+        font-size: 1.1rem;
+      }
+      .modal button {
+        width: 100%;
+        padding: 12px;
+        font-size: 16px;
+      }
+    }
+
+    /* Facebook-style action bar */
+    .container {
+      display: flex;
+      flex-direction: column;
+    }
+
+    #map {
+      width: 100%;
+      height: 750px;
+      border-radius: 10px;
+      border: 1px solid #e0e0e0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      margin-bottom: 0; /* Remove bottom margin since action bar is next */
+    }
+
+    /* Hover effects for action buttons */
+    .container button:hover,
+    .container label:hover {
+      /* no global hover visual — specific elements will get their own hover rules */
+      background-color: transparent !important;
+      box-shadow: none !important;
+      transform: none !important;
+    }
+
+    /* New styles for Waiting Areas toggle (match Are you waiting as No/Yes) */
+    .loc-toggle.areas-toggle-label {
+      width: var(--areas-toggle-width) !important;
+      height: 36px !important;
+      min-height: 36px !important;
+      max-height: 36px !important;
+      box-sizing: border-box;
+    }
+
+    .loc-toggle.areas-toggle-label .loc-slider {
+      height: 100% !important;
+      box-sizing: border-box;
+    }
+
+    .areas-toggle {
+      width: var(--areas-toggle-width);
+      height: 36px;
+      position: relative;
+      display: inline-block;
+      cursor: pointer;
+      flex: none;
+      z-index: 1;
+    }
+    .areas-toggle input { display: none; }
+
+    .areas-slider {
+      width: 100%;
+      height: 100%;
+      background: #e8f0f7;
+      border-radius: 20px;
+      position: relative;
+      transition: background 0.18s ease, box-shadow 0.18s ease;
+      border: 1px solid rgba(13,71,161,0.08);
+      padding: 0 10px;
+      box-sizing: border-box;
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    /* remove lift/shadow for areas-slider so our CTA hover override takes effect cleanly */
+    .areas-slider:hover {
+      transform: none !important;
+      box-shadow: none !important;
+    }
+
+    /* left = "Hide", right = "Show" labels */
+    .areas-slider::before,
+    .areas-slider::after {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 12px;
+      font-weight: 700;
+      color: rgba(46,61,73,0.75);
+      pointer-events: none;
+      transition: opacity 0.16s ease;
+      white-space: nowrap; /* Prevent text wrapping */
+    }
+    .areas-slider::before { content: "Hide"; left: 12px; opacity: 1; }
+    .areas-slider::after  { content: "Show"; right: 12px; opacity: 0; color: #fff; }
+
+    .areas-knob {
+      position: absolute;
+      top: 50%;
+      left: 6px;
+      transform: translateY(-50%);
+      width: 26px;
+      height: 26px;
+      background: var(--white);
+      border-radius: 50%;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+      transition: left 0.18s ease, box-shadow 0.12s ease;
+      will-change: left;
+    }
+
+    /* Checked state */
+    .areas-toggle input:checked + .areas-slider {
+      background: var(--accent-blue);
+      box-shadow: 0 8px 22px rgba(90,160,210,0.18);
+    }
+    .areas-toggle input:checked + .areas-slider::before { opacity: 0; }
+    .areas-toggle input:checked + .areas-slider::after  { opacity: 1; }
+    .areas-toggle input:checked + .areas-slider .areas-knob {
+      left: calc(100% - 6px - 26px);
+      background: var(--white);
+    }
+
+    /* Waiting areas label (initially hidden) */
+    #no-waiting-message {
+      display: none;
+      color: #FF6B6B;
+      font-weight: 600;
+      font-size: 0.85rem;
+      white-space: nowrap;
+    }
+
+    /* Show waiting areas button (initially hidden) */
+    #show-waiting-areas {
+      display: none;
+      padding: 10px 20px;
+      background-color: var(--accent-blue);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background-color 0.3s;
+    }
+    #show-waiting-areas:hover {
+      background-color: var(--cta-hover-blue);
+    }
+
+    @media (max-width: 768px) {
+      #map {
+        height: 450px;
+      }
+      
+      .container {
+        padding: 1rem;
+      }
+      
+      /* Stack action bar vertically on mobile */
+      .action-bar {
+        flex-direction: column;
+        gap: 8px;
+      }
+      
+      .action-bar > div {
+        width: 100%;
+        justify-content: center;
+      }
+      
+      #to-select {
+        max-width: 150px;
+      }
+    }
+
+    /* Override labels for the waiting-areas toggle only (keep Are you waiting as No/Yes) */
+    .loc-toggle.areas-toggle-label .loc-slider::before {
+      content: "Hide";
+      left: 8px;
+    }
+    .loc-toggle.areas-toggle-label .loc-slider::after {
+      content: "Show";
+      right: 8px;
+      color: #fff;
+    }
+
+    /* Ensure the checked/unchecked opacity behavior matches the base loc-toggle */
+    .loc-toggle.areas-toggle-label input:checked + .loc-slider::before { opacity: 0; }
+    .loc-toggle.areas-toggle-label input:checked + .loc-slider::after  { opacity: 1; }
+    .loc-toggle.areas-toggle-label .loc-slider::before,
+    .loc-toggle.areas-toggle-label .loc-slider::after {
+      transition: opacity 0.16s ease;
+    }
+
+    /* Back button: match toggle widths using the same CSS variable (no runtime dependency) */
+    button[onclick*="index.html"] {
+      width: var(--areas-toggle-width);
+      min-width: var(--areas-toggle-width);
+      max-width: var(--areas-toggle-width);
+      height: 36px;
+      min-height: 36px;
+      max-height: 36px;
+      padding: 8px 16px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+      border-radius: 999px; /* oval / pill shape */
+    }
+
+    /* Ensure dropdown has consistent height */
+    #to-select {
+      height: 36px;
+      min-height: 36px;
+      max-height: 36px;
+      padding: 8px;
+      box-sizing: border-box;
+      /* new: use primary teal background and white text for the destination dropdown */
+      background-color: var(--accent-blue);
+      color: #fff;
+      border: 1px solid rgba(0,0,0,0.08);
+    }
+
+    /* Ensure waiting-areas toggle has consistent height and use the shared width variable */
+    .loc-toggle.areas-toggle-label {
+      width: var(--areas-toggle-width) !important;
+      height: 36px !important;
+      min-height: 36px !important;
+      max-height: 36px !important;
+      box-sizing: border-box;
+    }
+
+    .loc-toggle.areas-toggle-label .loc-slider {
+      height: 100% !important;
+      box-sizing: border-box;
     }
   </style>
 </head>
@@ -589,44 +919,87 @@
         </label>
       </div>
       <div id="loc-status">Permission: unknown</div>
+      <!-- NEW: show when user is beyond waiting areas -->
+      <div id="beyond-message" style="display:none; color:#FF6B6B; font-weight:600; font-size:0.95rem; margin-top:6px;">
+        You are beyond the waiting areas
+      </div>
     </div>
+
+    <!-- Destination prompt shown when user enables location (replaced by modal) -->
+    <!-- <div id="destination-prompt" style="display:none; margin-top:12px; text-align:center;">
+      <div style="margin-bottom:8px; font-weight:600;">Select your destination</div>
+      <select id="loc-destination" style="width:220px; padding:8px; border-radius:6px; border:1px solid #ccc;">
+        <option value="">-- choose destination --</option>
+        <option value="San Felipe">San Felipe</option>
+        <option value="Cabangan">Cabangan</option>
+        <option value="Botolan">Botolan</option>
+        <option value="Iba">Iba</option>
+      </select>
+      <div style="margin-top:10px;">
+        <button id="dest-confirm" style="margin-right:8px;">Confirm</button>
+        <button id="dest-cancel" type="button" style="background:#eee;color:#333;">Cancel</button>
+      </div>
+    </div> -->
   </section>
 
   <div class="container">
     <h2>JeepnEE Real-Time Map</h2>
     <div id="map"></div>
-    <!-- Replace both the dropdown and waiting areas sections with this -->
-    <div class="location-section" style="margin-top: 10px;">
-      <div style="display: flex; flex-direction: column; gap: 15px; max-width: 400px; margin: 0 auto;">
-        <!-- Destination dropdown -->
-        <div style="display: flex; align-items: center; justify-content: space-between;">
-          <p style="margin: 0;">Select Destination</p>
-          <div style="width: 200px;">
-            <select id="to-select" style="width: 100%; padding: 8px; border-radius: 5px; border: 1px solid #ccc;">
-              <option value="">Select destination</option>
-              <option value="San Felipe">San Felipe</option>
-              <option value="Cabangan">Cabangan</option>
-              <option value="Botolan">Botolan</option>
-              <option value="Iba">Iba</option>
-            </select>
-          </div>
-        </div>
-        
-        <!-- Waiting areas toggle -->
-        <div style="display: flex; align-items: center; justify-content: space-between;">
-          <p style="margin: 0;">Show Waiting Areas</p>
-          <div class="loc-toggle-container">
-            <div class="loc-toggle-wrap">
-              <label class="loc-toggle" title="Show waiting areas">
-                <input id="waiting-areas-toggle" type="checkbox" aria-label="Show waiting areas" />
-                <span class="loc-slider" role="switch" aria-checked="false" tabindex="0"></span>
-              </label>
-            </div>
-          </div>
-        </div>
+    
+    <!-- Facebook-style action bar below the map -->
+    <div style="display: flex; align-items: stretch; justify-content: space-around; padding: 16px; border-top: 1px solid #e0e0e0; border-bottom: 1px solid #e0e0e0; background: #fff; margin-bottom: 16px; gap: 16px;">
+      
+      <!-- Back to Index (Like) -->
+      <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 0px;">
+        <span style="font-weight: 600; color: var(--text-color); font-size: 14px;">Back to Index</span>
+        <button onclick="window.location.href='index.html'" class="back-button" aria-label="Back to index">←</button>
+      </div>
+ 
+      <!-- Select Destination (Comment) -->
+      <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 8px;">
+        <label style="font-weight: 600; color: var(--text-color); font-size: 14px;">Destination</label>
+        <select id="to-select" style="width: 100%; max-width: 180px; padding: 8px; border-radius: 4px; border: 1px solid #ccc; font-size: 14px;">
+          <option value="">Select</option>
+          <option value="San Felipe">San Felipe</option>
+          <option value="Cabangan">Cabangan</option>
+          <option value="Botolan">Botolan</option>
+          <option value="Iba">Iba</option>
+        </select>
+      </div>
+ 
+      <!-- Show Waiting Areas (Share) -->
+      <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 8px;">
+        <label style="font-weight: 600; color: var(--text-color); font-size: 14px;">Waiting Areas</label>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; justify-content: center;">
+           <label class="loc-toggle areas-toggle-label" title="Show waiting areas" style="margin: 0;">
+             <input id="waiting-areas-toggle" type="checkbox" aria-label="Show waiting areas" />
+             <span class="loc-slider" role="switch" aria-checked="false" tabindex="0"></span>
+           </label>
+           <div id="no-waiting-message" style="display: none; color: #FF6B6B; font-weight: 600; font-size: 0.85rem; white-space: nowrap;">
+             No waiting users
+           </div>
+         </div>
+       </div>
+    </div>
+  </div>
+
+  <!-- Destination modal (appears when enabling 'Are you waiting?') -->
+  <div id=  "destination-modal" class="modal" aria-hidden="true" role="dialog" style="display:none;">
+    <div class="modal-backdrop" style="position:fixed;iynset:0;background:rgba(0,0,0,0.45);"></div>
+    <div class="modal-panel" role="document" style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:#fff;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,0.2);padding:20px;max-width:360px;width:90%;z-index:10001;">
+      <h3 style="margin-bottom:8px;">Select your destination</h3>
+      <select id="modal-destination" style="width:100%; padding:10px; border-radius:6px; border:1px solid #ccc; margin-bottom:12px;">
+        <option value="">-- choose destination --</option>
+        <option value="San Felipe">San Felipe</option>
+        <option value="Cabangan">Cabangan</option>
+        <option value="Botolan">Botolan</option>
+        <option value="Iba">Iba</option>
+      </select>
+      <div style="display:flex; justify-content:flex-end; gap:8px;">
+        <button id="modal-confirm">Confirm</button>
+        <button id="modal-cancel" type="button" style="background:#eee;color:#333;">Cancel</button>
       </div>
     </div>
-    <button onclick="window.location.href='index.html'">Back to Index</button>
   </div>
 
   <!-- Online Devices Section -->
@@ -670,9 +1043,12 @@
       ref,
       onValue,
       set,
+      update,
       onDisconnect,
       serverTimestamp,
-      remove
+      remove,
+      // push,  <-- removed
+      get
     } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
     const firebaseConfig = {
@@ -689,30 +1065,210 @@
     const database = getDatabase(app);
     const waitingUsersRef = ref(database, 'waitingUsers');
 
-    // Keep overlays in sync with DB
+    // Remove any existing 'connections' branch (one-time cleanup)
+    remove(ref(database, 'connections')).catch(() => {});
+
+    // --- Presence tracking (reworked): no 'connections' branch anymore ---
+    const infoConnectedRef = ref(database, '.info/connected'); // server connection status
+    let thisConnectionRef = null;
+
+    // --- User information (new) ---
+    function getOrCreateUserInfoId() {
+      let id = localStorage.getItem('userInfoId');
+      if (!id) {
+        id = 'visitor_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('userInfoId', id);
+      }
+      return id;
+    }
+    const userInfoId = getOrCreateUserInfoId();
+    const userInfoRef = ref(database, `userInformation/${userInfoId}`);
+
+    async function createOrUpdateUserInfo() {
+      try {
+        // gather common client metadata
+        const ua = navigator.userAgent || '';
+        const lang = navigator.language || '';
+        const platform = navigator.platform || '';
+        const screenRes = (window.screen && (screen.width + 'x' + screen.height)) || '';
+        const tz = (Intl && Intl.DateTimeFormat && Intl.DateTimeFormat().resolvedOptions().timeZone) || '';
+        const referrer = document.referrer || '';
+
+        // check if a record already exists so we only set firstSeen once
+        const snap = await get(userInfoRef);
+        if (!snap.exists()) {
+          // create initial record and set firstSeen to server timestamp
+          await set(userInfoRef, {
+            firstSeen: serverTimestamp(),
+            lastSeen: serverTimestamp(),
+            userAgent: ua,
+            language: lang,
+            platform: platform,
+            screenResolution: screenRes,
+            timezone: tz,
+            referrer: referrer,
+            status: 'online',
+            waitingStatus: 'No'
+          });
+        } else {
+          // update metadata + lastSeen (keep firstSeen untouched)
+          await update(userInfoRef, {
+            lastSeen: serverTimestamp(),
+            userAgent: ua,
+            language: lang,
+            platform: platform,
+            screenResolution: screenRes,
+            timezone: tz,
+            referrer: referrer
+          });
+        }
+      } catch (err) {
+        console.warn("createOrUpdateUserInfo failed", err);
+      }
+    }
+
+    // Helper: increment access count for this user
+    async function incrementAccessCount() {
+      try {
+        const snap = await get(userInfoRef);
+        if (snap.exists()) {
+          const currentCount = snap.val().accessCount || 0;
+          await update(userInfoRef, {
+            accessCount: currentCount + 1,
+            lastSeen: serverTimestamp()
+          });
+        } else {
+          // If record doesn't exist yet, set it to 1
+          await update(userInfoRef, {
+            accessCount: 1,
+            lastSeen: serverTimestamp()
+          });
+        }
+      } catch (err) {
+        console.warn("incrementAccessCount failed", err);
+      }
+    }
+
+    // call this right after user info is created/updated
+    createOrUpdateUserInfo().then(() => {
+      incrementAccessCount().catch(() => {});
+    }).catch(() => {
+      // if createOrUpdateUserInfo fails, still try to increment
+      incrementAccessCount().catch(() => {});
+    });
+
+    // --- Sync waitingStatus once to match the local toggle state (run once after init) ---
+    async function syncWaitingStatusToToggleOnce() {
+      try {
+        const checkbox = document.getElementById('loc-toggle');
+        const desired = checkbox && checkbox.checked ? 'Yes' : 'No';
+
+        // Read current DB value once
+        const snap = await get(userInfoRef);
+        const current = snap.exists() ? snap.val().waitingStatus : null;
+
+        // Only write if different (one-time write). This avoids loops/continuous writes.
+        if (current !== desired) {
+          await update(userInfoRef, { waitingStatus: desired, lastSeen: serverTimestamp() });
+        }
+      } catch (err) {
+        console.warn('syncWaitingStatusToToggleOnce failed', err);
+      }
+    }
+
+    // Run the sync once after we have ensured the user record and incremented accessCount.
+    (async () => {
+      try {
+        // Wait for initial create/update + increment to settle
+        await createOrUpdateUserInfo();
+        await incrementAccessCount();
+      } catch (e) { /* ignore */ }
+      syncWaitingStatusToToggleOnce().catch(() => {});
+    })();
+
+    // helper to update online/offline status; used from presence logic
+    async function setUserOnlineStatus(status) {
+      try {
+        await update(userInfoRef, {
+          status: status,
+          lastSeen: serverTimestamp()
+        });
+      } catch (err) {
+        console.warn("setUserOnlineStatus failed", err);
+      }
+    }
+
+    // helper for waiting status ("Yes"/"No")
+    window.setUserWaitingStatus = async function (val) {
+      try {
+        const v = val === 'Yes' ? 'Yes' : 'No';
+        await update(userInfoRef, { waitingStatus: v, lastSeen: serverTimestamp() });
+      } catch (err) {
+        console.warn("setUserWaitingStatus failed", err);
+      }
+    };
+
+    // ensure a record exists immediately
+    createOrUpdateUserInfo().catch(() => {});
+
+    // When connection state changes, mark this visitor online and schedule onDisconnect to mark offline
+    onValue(infoConnectedRef, (snap) => {
+      const connected = snap.val() === true;
+      if (connected) {
+        // mark user info as online and set onDisconnect to mark offline
+        setUserOnlineStatus('online').catch(() => {});
+        try {
+          // schedule offline update on disconnect
+          onDisconnect(userInfoRef).update({ status: 'offline', lastSeen: serverTimestamp() }).catch(() => {});
+        } catch (e) {
+          // ignore if SDK variation throws
+        }
+      } else {
+        // no active connection -> rely on server onDisconnect or client-side lastSeen updates
+      }
+    });
+
+    // Drive "Currently Online Devices" from userInformation.{id}.status
+    const userInformationRef = ref(database, 'userInformation');
+    onValue(userInformationRef, (snapshot) => {
+      try {
+        const data = snapshot.val() || {};
+        let onlineCount = 0;
+        Object.values(data).forEach(u => {
+          if (u && u.status === 'online') onlineCount++;
+        });
+        const el = document.getElementById('onlineCount');
+        if (el) el.textContent = String(onlineCount);
+      } catch (err) {
+        console.warn('update onlineCount failed', err);
+      }
+    });
+
+    let showWaitingAreasEnabled = false; // track user's toggle preference
+
+    // Keep overlays in sync with DB (update counts and show/hide based on count AND toggle state)
     onValue(waitingUsersRef, (snapshot) => {
       const waitingUsersRaw = snapshot.val() || {};
       const now = Date.now();
       const STALE_MS = 3 * 60 * 1000; // 3 minutes
 
-      // Collect stale ids to remove (timestamp is serverTimestamp value)
+      // Collect stale ids to remove
       const staleIds = [];
       Object.entries(waitingUsersRaw).forEach(([id, user]) => {
         const ts = Number(user?.timestamp) || 0;
         if (ts && now - ts > STALE_MS) staleIds.push(id);
       });
 
-      // Remove stale entries (fire-and-forget)
+      // Remove stale entries
       staleIds.forEach(id => {
         remove(ref(database, `waitingUsers/${id}`)).catch(() => {});
-        // Also drop from the local view so counting below ignores them immediately
         delete waitingUsersRaw[id];
       });
 
       // reset counts
       Object.values(window.barangayAreas || {}).forEach(a => a.waitingCount = 0);
 
-      // count users per area (ignoring removed/stale users)
+      // count users per area
       Object.values(waitingUsersRaw).forEach(user => {
         if (!user || user.latitude == null || user.longitude == null) return;
         const u = new google.maps.LatLng(user.latitude, user.longitude);
@@ -723,10 +1279,28 @@
         });
       });
 
-      // update labels if present
+      // update labels and show/hide overlays based on count AND toggle state
       Object.entries(window.barangayAreas || {}).forEach(([name, area]) => {
         const label = window.barangayLabels && window.barangayLabels[name];
-        if (label && label.element) label.element.textContent = String(area.waitingCount || 0);
+        if (label && label.element) {
+          label.element.textContent = String(area.waitingCount || 0);
+        }
+
+        // Show circle and overlay only if:
+        // 1. Toggle is ON (showWaitingAreasEnabled === true)
+        // 2. AND waitingCount > 0
+        const circle = window.barangayCircles && window.barangayCircles[name];
+        const isVisible = showWaitingAreasEnabled && area.waitingCount > 0;
+
+        if (circle) {
+          try { circle.setVisible(isVisible); } catch (e) {}
+        }
+
+        if (label && label.overlay) {
+          try {
+            label.overlay.setMap(isVisible ? map : null);
+          } catch (e) {}
+        }
       });
     });
 
@@ -740,52 +1314,58 @@
       return id;
     }
 
-    // update this device's waiting user record (throttled to 10s)
+    // update this device's waiting user record → now writes to userInformation
     async function updateUserLocation(position) {
       try {
         if (!position || !position.coords) return;
-
-        // persistent id for this device
-        const id = getOrCreateWaitingUserId();
         const now = Date.now();
         const lastSent = Number(localStorage.getItem('waitingUserLastSent') || 0);
-
-        // throttle: only write if at least 10 seconds passed since last write
-        const THROTTLE_MS = 10_000;
+        const THROTTLE_MS = 30_000;
         if (now - lastSent < THROTTLE_MS) return;
 
-        const userRef = ref(database, `waitingUsers/${id}`);
-        await set(userRef, {
+        // Write location directly to userInformation (not waitingUsers)
+        await update(userInfoRef, {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
-          timestamp: serverTimestamp()
+          locationTimestamp: serverTimestamp()
         });
 
-        // schedule removal on disconnect (safe to call repeatedly)
-        onDisconnect(userRef).remove();
-
-        // record last sent time
         localStorage.setItem('waitingUserLastSent', String(now));
       } catch (err) {
         console.error("updateUserLocation error:", err);
       }
     }
 
-    // remove this device's waiting user record (call from disableLocationTracking)
+    // remove this device's location from userInformation (call from disableLocationTracking)
+    // UPDATED: Keep all location data including timestamp for historical record
     async function removeThisWaitingUser() {
       try {
-        const id = localStorage.getItem('waitingUserId');
-        if (!id) return;
-        await remove(ref(database, `waitingUsers/${id}`));
+        // Do nothing — all location data is preserved for historical reference
+        // When user stops tracking, we keep latitude, longitude, destination, and locationTimestamp
       } catch (err) {
         console.error("removeThisWaitingUser error:", err);
       }
     }
 
+    // set destination in userInformation (not waitingUsers)
+    async function setUserDestination(destination) {
+      try {
+        if (!destination) return;
+        // write destination string under userInformation/{id}/destination
+        await update(userInfoRef, {
+          destination: destination,
+          lastSeen: serverTimestamp()
+        });
+      } catch (err) {
+        console.error("setUserDestination error:", err);
+      }
+    }
+
+    // expose for other scripts to call
+    window.setUserDestination = setUserDestination;
     window.updateUserLocation = updateUserLocation;
     window.removeThisWaitingUser = removeThisWaitingUser;
-
-    // jeepneys listener (unchanged) — keep here so markers still update from DB
+  // jeepneys listener (unchanged) — keep here so markers still update from DB
     const jeepneysRootRef = ref(database, 'jeepneys');
     onValue(jeepneysRootRef, (snapshot) => {
       const all = snapshot.val() || {};
@@ -867,7 +1447,27 @@
       'CAB11': { lat: 15.20855, lng: 120.02890, radius: 500, waitingCount: 0 },
       'BOT01': { lat: 15.21674, lng: 120.02495, radius: 500, waitingCount: 0 },
       'BOT02': { lat: 15.22454, lng: 120.02033, radius: 500, waitingCount: 0 },
-      'BOT03': { lat: 15.23212, lng: 120.01576, radius: 500, waitingCount: 0 }
+      'BOT03': { lat: 15.23285, lng: 120.01697, radius: 500, waitingCount: 0 },
+      'BOT04': { lat: 15.24150, lng: 120.01447, radius: 500, waitingCount: 0 },
+      'BOT05': { lat: 15.24820, lng: 120.01911, radius: 500, waitingCount: 0 },
+      'BOT06': { lat: 15.25444, lng: 120.02533, radius: 500, waitingCount: 0 },
+      'BOT07': { lat: 15.25934, lng: 120.03297, radius: 500, waitingCount: 0 },
+      'BOT08': { lat: 15.26557, lng: 120.03657, radius: 500, waitingCount: 0 },
+      'BOT09': { lat: 15.27445, lng: 120.03507, radius: 500, waitingCount: 0 },
+      'BOT10': { lat: 15.28319, lng: 120.03358, radius: 500, waitingCount: 0 },
+      'BOT11': { lat: 15.28933, lng: 120.02995, radius: 500, waitingCount: 0 },
+      'BOT12': { lat: 15.29139, lng: 120.02384, radius: 500, waitingCount: 0 },
+      'BOT13': { lat: 15.29697, lng: 120.01670, radius: 500, waitingCount: 0 },
+      'BOT14': { lat: 15.30269, lng: 120.00959, radius: 500, waitingCount: 0 },
+      'BOT15': { lat: 15.30811, lng: 120.00217, radius: 500, waitingCount: 0 },
+      'IBA01': { lat: 15.31362, lng: 119.99486, radius: 500, waitingCount: 0 },
+      'IBA02': { lat: 15.31985, lng: 119.98812, radius: 500, waitingCount: 0 },
+      'IBA03': { lat: 15.32523, lng: 119.98069, radius: 500, waitingCount: 0 },
+      'IBA04': { lat: 15.32876, lng: 119.97274, radius: 500, waitingCount: 0 },
+      'IBA05': { lat: 15.33026, lng: 119.96571, radius: 500, waitingCount: 0 },
+      'IBA06': { lat: 15.33206, lng: 119.97673, radius: 500, waitingCount: 0 },
+      'IBA07': { lat: 15.33803, lng: 119.96701, radius: 500, waitingCount: 0 }
+
     };
 
     // Store circle overlays and labels
@@ -921,8 +1521,29 @@
       // Listen to route dropdown
       const toSelect = document.getElementById('to-select');
       if (toSelect) {
-        toSelect.addEventListener('change', function () {
-          filterMarkersByRoute(this.value);
+        toSelect.addEventListener('change', async function () {
+          const val = this.value;
+          // update visible markers immediately
+          filterMarkersByRoute(val);
+
+          // Only persist user's chosen destination in Firebase if the user is "waiting"
+          // (loc-toggle checked). Do NOT write to waitingUsers when toggle is OFF.
+          const locCheckbox = document.getElementById('loc-toggle');
+          const isWaiting = locCheckbox ? locCheckbox.checked : Boolean(window.userLocationEnabled);
+
+          if (!isWaiting) {
+            // user is not waiting — skip writing destination to waitingUsers
+            return;
+          }
+
+          // persist user's chosen destination in Firebase (if function available)
+          if (typeof window.setUserDestination === 'function') {
+            try {
+              await window.setUserDestination(val);
+            } catch (e) {
+              console.warn('setUserDestination failed', e);
+            }
+          }
         });
       }
 
@@ -936,150 +1557,114 @@
       const el = document.getElementById('loc-status');
       if (el) el.textContent = "Permission: " + text;
     }
-
-    function escapeHtml(str) {
-      return String(str || '').replace(/[&<>"'`=\/]/g, function (s) {
-        return {
-          '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;',
-          "'": '&#39;', '/': '&#x2F;', '`': '&#x60;', '=': '&#x3D;'
-        }[s];
-      });
+    // Helper: distance (meters) between two lat/lng points (Haversine)
+    function distanceMeters(lat1, lon1, lat2, lon2) {
+      const R = 6371000; // Earth radius in meters
+      const toRad = v => v * Math.PI / 180;
+      const dLat = toRad(lat2 - lat1);
+      const dLon = toRad(lon2 - lon1);
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
     }
-
-    function generateInfoContent(key, marker) {
-      const data = (window.jeepneyData && window.jeepneyData[key]) ? window.jeepneyData[key] : {};
-      const title = escapeHtml(data.title || key);
-      const link = data.link ? escapeHtml(data.link) : '#';
-
-      return `
-        <div class="info-window-content" style="min-width:100px;max-width:160px;font-family:inherit;color:var(--text-color);padding:4px">
-          <div class="iw-title" style="font-weight:600;margin-bottom:4px;font-size:0.9rem;text-align:center">${title}</div>
-          <a class="info-window-button" href="${link}" target="_blank" rel="noopener" 
-             style="display:block;padding:6px 8px;background:var(--accent-blue);color:#fff;border-radius:4px;
-                    text-decoration:none;font-weight:500;font-size:0.8rem;text-align:center">View details</a>
-        </div>
-      `;
-    }
-    window.generateInfoContent = generateInfoContent;
-
-    function centerMapOnPosition(position, zoomWhenCenter = 14) {
-      const lat = position.coords.latitude;
-      const lng = position.coords.longitude;
-      const latLng = { lat, lng };
-
-      if (zoomWhenCenter !== false) {
-        map.setCenter(latLng);
-        map.setZoom(zoomWhenCenter === undefined ? 14 : zoomWhenCenter);
+    // Helper: check if coords are inside any defined waiting area
+    function isWithinAnyWaitingArea(lat, lng) {
+      try {
+        const areas = window.barangayAreas || {};
+        for (const key in areas) {
+          const a = areas[key];
+          if (!a || typeof a.lat !== 'number' || typeof a.lng !== 'number' || typeof a.radius !== 'number') continue;
+          const d = distanceMeters(lat, lng, a.lat, a.lng);
+          if (d <= (Number(a.radius) || 0)) return true;
+        }
+      } catch (e) {
+        console.warn('isWithinAnyWaitingArea error', e);
       }
-
-      if (!window.userMarker) {
-        window.userMarker = new google.maps.Marker({
-          position: latLng,
-          map,
-          title: "You",
-          optimized: false,
-          icon: {
-            path: google.maps.SymbolPath.CIRCLE,
-            scale: 8,
-            fillColor: "#4285F4",
-            fillOpacity: 1,
-            strokeColor: "#ffffff",
-            strokeWeight: 2
-          }
-        });
-
-        window.userMarker.addListener("click", function () {
-          if (!infoWindow) infoWindow = new google.maps.InfoWindow({ maxWidth: 220 });
-          infoWindow.setContent('<div class="info-window-content"><div class="iw-title">You are here.</div></div>');
-          infoWindow.open(map, window.userMarker);
-        });
-      } else {
-        window.userMarker.setPosition(latLng);
-        window.userMarker.setMap(map);
-      }
-    }
-
-    // enableLocationTracking / disableLocationTracking (use your existing logic)
-    function enableLocationTracking() {
-      if (!navigator.geolocation) {
-        updateLocStatus("unsupported");
-        document.getElementById('loc-toggle').checked = false;
-        return;
-      }
-
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          window.userLocationEnabled = true;
-          updateLocStatus("granted");
-          centerMapOnPosition(pos);
-          if (typeof window.updateUserLocation === 'function') {
-            window.updateUserLocation(pos); // update waitingUsers in DB
-          }
-
-          if (window.userLocationWatchId == null) {
-            window.userLocationWatchId = navigator.geolocation.watchPosition(
-              (position) => {
-                centerMapOnPosition(position, false);
-                if (typeof window.updateUserLocation === 'function') {
-                  window.updateUserLocation(position);
-                }
-              },
-              (err) => {
-                console.warn("watchPosition error", err);
-                if (err.code === err.PERMISSION_DENIED) {
-                  disableLocationTracking(true);
-                }
-              },
-              { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
-            );
-          }
-        },
-        (err) => {
-          console.warn("getCurrentPosition error", err);
-          updateLocStatus(err.code === 1 ? "denied" : "error");
-          document.getElementById('loc-toggle').checked = false;
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-      );
-    }
-
-    function disableLocationTracking(silent = false) {
-      window.userLocationEnabled = false;
-      if (window.userLocationWatchId != null) {
-        navigator.geolocation.clearWatch(window.userLocationWatchId);
-        window.userLocationWatchId = null;
-      }
-      if (window.userMarker) {
-        window.userMarker.setMap(null);
-      }
-
-      // remove waitingUsers record if helper available
-      if (typeof window.removeThisWaitingUser === 'function') {
-        window.removeThisWaitingUser().catch(err => console.warn("remove waiting user failed", err));
-      }
-
-      if (!silent) updateLocStatus("off");
+      return false;
     }
 
     function setupUserLocationControls() {
       const checkbox = document.getElementById('loc-toggle');
       if (!checkbox) return;
 
+      // Force initial state to "No" on page load / refresh
+      checkbox.checked = false;
+
+      const modal = document.getElementById('destination-modal');
+      const modalSelect = document.getElementById('modal-destination');
+      const modalConfirm = document.getElementById('modal-confirm');
+      const modalCancel = document.getElementById('modal-cancel');
+      const globalSelect = document.getElementById('to-select');
+
+      function openModal() {
+        if (!modal) return;
+        modal.style.display = 'block';
+        modal.setAttribute('aria-hidden', 'false');
+        setTimeout(() => modalSelect && modalSelect.focus(), 50);
+      }
+      function closeModal() {
+        if (!modal) return;
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+      }
+
+      // Confirm: save destination, filter markers, persist destination, then enable tracking
+      if (modalConfirm && modalSelect) {
+        modalConfirm.addEventListener('click', async () => {
+          const val = modalSelect.value;
+          if (!val) {
+            alert('Please select a destination to continue.');
+            modalSelect.focus();
+            return;
+          }
+          if (globalSelect) globalSelect.value = val;
+
+          if (typeof window.setUserDestination === 'function') {
+            try { await window.setUserDestination(val); } catch (e) { console.warn('Failed to save destination:', e); }
+          }
+
+          if (typeof filterMarkersByRoute === 'function') filterMarkersByRoute(val);
+
+          closeModal();
+
+          // mark waiting status = Yes (user confirmed they are waiting)
+          if (typeof window.setUserWaitingStatus === 'function') {
+            try { await window.setUserWaitingStatus('Yes'); } catch (e) { console.warn(e); }
+          }
+
+          if (typeof enableLocationTracking === 'function') {
+            try { enableLocationTracking(); } catch (e) { console.warn('enableLocationTracking error', e); }
+          }
+        });
+      }
+
+      // Cancel: close modal and uncheck toggle (user aborted)
+      if (modalCancel) {
+        modalCancel.addEventListener('click', () => {
+          closeModal();
+          // make sure this is treated as user turning it off
+          checkbox.checked = false;
+          updateLocStatus('off');
+          if (typeof disableLocationTracking === 'function') {
+            try { disableLocationTracking(); } catch (e) { console.warn('disableLocationTracking error', e); }
+          }
+          // mark waiting status = No (always attempt this)
+          if (typeof window.setUserWaitingStatus === 'function') {
+            window.setUserWaitingStatus('No').catch(() => {});
+          }
+        });
+      }
+
+      // Permissions API handling: update status only, do NOT auto-check or auto-enable
       if (navigator.permissions && navigator.permissions.query) {
         navigator.permissions.query({ name: 'geolocation' }).then((perm) => {
           updateLocStatus(perm.state);
-          if (perm.state === 'granted') {
-            checkbox.checked = true;
-            enableLocationTracking();
-          } else {
-            checkbox.checked = false;
-          }
+          // do not auto-check or enable even if permission is granted
           perm.onchange = function () {
             updateLocStatus(perm.state);
-            if (perm.state === 'granted') {
-              checkbox.checked = true;
-              enableLocationTracking();
-            } else {
+            if (perm.state === 'denied') {
               checkbox.checked = false;
               disableLocationTracking(true);
             }
@@ -1089,34 +1674,110 @@
         updateLocStatus('unknown');
       }
 
+      // When the user toggles ON, check whether they are inside waiting areas.
+      // If outside, show a message below the toggle; still open the destination modal.
       checkbox.addEventListener('change', function () {
-        if (this.checked) enableLocationTracking(); else disableLocationTracking();
+        const beyondEl = document.getElementById('beyond-message');
+        if (this.checked) {
+          if (!navigator.geolocation) {
+            if (beyondEl) beyondEl.style.display = 'none';
+            openModal();
+            return;
+          }
+          navigator.geolocation.getCurrentPosition((pos) => {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            const inside = isWithinAnyWaitingArea(lat, lng);
+            if (beyondEl) beyondEl.style.display = inside ? 'none' : 'block';
+            // continue with normal flow (destination modal)
+            openModal();
+          }, (err) => {
+            // on error, don't show beyond-message and proceed
+            if (beyondEl) beyondEl.style.display = 'none';
+            openModal();
+          }, { timeout: 7000 });
+        } else {
+          // user turned it off
+          if (document.getElementById('beyond-message')) document.getElementById('beyond-message').style.display = 'none';
+          closeModal();
+          if (typeof disableLocationTracking === 'function') {
+            try { disableLocationTracking(); } catch (e) { console.warn('disableLocationTracking error', e); }
+          }
+          // update waiting status = No (always attempt this)
+          if (typeof window.setUserWaitingStatus === 'function') {
+            window.setUserWaitingStatus('No').catch(() => {});
+          }
+        }
+      });
+
+      // Allow Esc to close modal and cancel the action
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal && modal.style.display === 'block') {
+          closeModal();
+          checkbox.checked = false;
+          updateLocStatus('off');
+          if (typeof disableLocationTracking === 'function') {
+            try { disableLocationTracking(); } catch (err) { console.warn('disableLocationTracking error', err); }
+          }
+        }
       });
     }
 
-    // Function to create waiting area overlays (single, consolidated)
-    function createWaitingAreas() {
-      // clear existing if any
-      Object.values(window.barangayCircles || {}).forEach(c => c.setMap(null));
-      Object.values(window.barangayLabels || {}).forEach(l => {
-        if (l && l.overlay && typeof l.overlay.setMap === 'function') l.overlay.setMap(null);
+    // Replace or add after the createWaitingAreas() function (inside the Google Maps and Markers <script>)
+    function toggleOverlays(show) {
+      // Update the global flag so Firebase listener respects it
+      showWaitingAreasEnabled = Boolean(show);
+      
+      // Re-apply visibility based on toggle state AND waitingCount
+      Object.entries(window.barangayAreas || {}).forEach(([name, area]) => {
+        const circle = window.barangayCircles && window.barangayCircles[name];
+        const label = window.barangayLabels && window.barangayLabels[name];
+        
+        // Show only if toggle is ON and waitingCount > 0
+        const isVisible = show && area.waitingCount > 0;
+        
+        if (circle) {
+          try { circle.setVisible(isVisible); } catch (e) {}
+        }
+        if (label && label.overlay) {
+          try { label.overlay.setMap(isVisible ? map : null); } catch (e) {}
+        }
       });
+    }
+
+    // Wire the checkbox to the toggle (ensure this runs after DOM elements exist)
+    (function attachWaitingToggle() {
+      const waitingToggle = document.getElementById('waiting-areas-toggle');
+      if (!waitingToggle) return;
+      
+      // ensure overlays start hidden (toggle starts unchecked)
+      showWaitingAreasEnabled = false;
+      toggleOverlays(false);
+      
+      waitingToggle.addEventListener('change', function (e) {
+        toggleOverlays(Boolean(e.target.checked));
+      });
+    })();
+
+    function createWaitingAreas() {
+      // clear existing overlays if any
+      Object.values(window.barangayCircles || {}).forEach(c => { try { c.setMap(null); } catch(e){} });
+      Object.values(window.barangayLabels || {}).forEach(l => { try { if (l && l.overlay) l.overlay.setMap(null); } catch(e){} });
       window.barangayCircles = {};
       window.barangayLabels = {};
 
       Object.entries(window.barangayAreas || {}).forEach(([name, data]) => {
         const circle = new google.maps.Circle({
           strokeColor: '#FF6B6B',
-          strokeOpacity: 0.8,
+          strokeOpacity: 0.9,
           strokeWeight: 2,
           fillColor: '#FF6B6B',
-          fillOpacity: 0.15,
+          fillOpacity: 0.12,
           map: map,
           center: { lat: data.lat, lng: data.lng },
-          radius: data.radius
+          radius: Number(data.radius) || 300
         });
-        // start hidden
-        circle.setVisible(false);
+        circle.setVisible(false); // start hidden
 
         const labelDiv = document.createElement('div');
         labelDiv.className = 'waiting-count-label';
@@ -1130,57 +1791,198 @@
           const proj = this.getProjection();
           if (!proj) return;
           const pos = proj.fromLatLngToDivPixel(new google.maps.LatLng(data.lat, data.lng));
-          labelDiv.style.left = (pos.x - (labelDiv.offsetWidth/2)) + 'px';
-          labelDiv.style.top = (pos.y - (labelDiv.offsetHeight/2)) + 'px';
+          labelDiv.style.left = (pos.x - (labelDiv.offsetWidth / 2)) + 'px';
+          labelDiv.style.top = (pos.y - (labelDiv.offsetHeight / 2)) + 'px';
         };
         overlay.onRemove = function() {
           if (labelDiv.parentElement) labelDiv.parentElement.removeChild(labelDiv);
         };
-        // start hidden
-        overlay.setMap(null);
+        overlay.setMap(null); // start hidden
 
         window.barangayCircles[name] = circle;
         window.barangayLabels[name] = { overlay: overlay, element: labelDiv };
       });
+
+      // ensure labels reposition after map interactions
+      if (map && !createWaitingAreas._idleListenerAdded) {
+        google.maps.event.addListener(map, 'idle', function() {
+          Object.values(window.barangayLabels || {}).forEach(lbl => {
+            try { if (lbl && lbl.overlay && lbl.overlay.getMap()) lbl.overlay.draw(); } catch(e){}
+ });
+        });
+        createWaitingAreas._idleListenerAdded = true;
+      }
     }
 
-    // Toggle overlays: show/hide circles and label overlays
-    function toggleOverlays(show) {
-      Object.values(window.barangayCircles || {}).forEach(circle => circle.setVisible(Boolean(show)));
-      Object.values(window.barangayLabels || {}).forEach(labelObj => {
-        if (labelObj && labelObj.overlay && typeof labelObj.overlay.setMap === 'function') {
-          labelObj.overlay.setMap(show ? map : null);
+
+
+    // Polling control for waiting-area visibility
+    window.waitingAreasPollIntervalId = null;
+
+    function applyWaitingAreasFromCounts() {
+      const enabled = document.getElementById('waiting-areas-toggle')?.checked === true;
+      
+           
+      // Check if any area has waitingCount > 0
+      const hasAnyWaiting = Object.values(window.barangayAreas || {}).some(area => Number(area.waitingCount || 0) > 0);
+      
+      // Show/hide "no waiting users" message
+      const noWaitingMsg = document.getElementById('no-waiting-message');
+      if (noWaitingMsg) {
+        noWaitingMsg.style.display = (enabled && !hasAnyWaiting) ? 'block' : 'none';
+      }
+
+      Object.entries(window.barangayAreas || {}).forEach(([name, area]) => {
+        const circle = window.barangayCircles && window.barangayCircles[name];
+        const label = window.barangayLabels && window.barangayLabels[name];
+        const shouldShow = enabled && (Number(area.waitingCount || 0) > 0);
+
+        if (circle) {
+          try { circle.setVisible(shouldShow); } catch (e) { console.warn(e); }
         }
+        if (label && label.overlay) {
+          try { label.overlay.setMap(shouldShow ? map : null); } catch (e) { console.warn(e); }
+        }
+      });
+       }
+
+    function startWaitingAreasPolling() {
+      // immediate apply
+      applyWaitingAreasFromCounts();
+      // clear existing interval if any
+      if (window.waitingAreasPollIntervalId) {
+        clearInterval(window.waitingAreasPollIntervalId);
+        window.waitingAreasPollIntervalId = null;
+      }
+      // poll every 5 seconds (reverted from 10s)
+      window.waitingAreasPollIntervalId = setInterval(applyWaitingAreasFromCounts, 10000);
+    }
+
+    function stopWaitingAreasPolling() {
+      if (window.waitingAreasPollIntervalId) {
+        clearInterval(window.waitingAreasPollIntervalId);
+        window.waitingAreasPollIntervalId = null;
+      }
+      // hide all overlays when polling stops
+      Object.keys(window.barangayAreas || {}).forEach(name => {
+        const circle = window.barangayCircles && window.barangayCircles[name];
+        const label = window.barangayLabels && window.barangayLabels[name];
+        if (circle) try { circle.setVisible(false); } catch (e) {}
+        if (label && label.overlay) try { label.overlay.setMap(null); } catch (e) {}
       });
     }
 
-    // Attach single working listener to waiting areas checkbox
-    document.addEventListener('DOMContentLoaded', function () {
+    // Attach listener to the toggle and initialize state
+    (function attachWaitingTogglePolling() {
       const waitingToggle = document.getElementById('waiting-areas-toggle');
-      if (waitingToggle) {
-        waitingToggle.addEventListener('change', function (e) {
-          toggleOverlays(e.target.checked);
-        });
-        // ensure overlays start hidden
-        toggleOverlays(false);
+      if (!waitingToggle) return;
+
+      // initialize: ensure overlays hidden until user enables the toggle
+      stopWaitingAreasPolling();
+
+      waitingToggle.addEventListener('change', function (e) {
+        const enabled = Boolean(e.target.checked);
+        if (enabled) startWaitingAreasPolling(); else stopWaitingAreasPolling();
+      });
+
+      // if checkbox is pre-checked on load, start polling
+      if (waitingToggle.checked) startWaitingAreasPolling();
+    })();
+
+    document.addEventListener('DOMContentLoaded', () => {
+      function matchWaitingToggleToBackButton() {
+        // Keep runtime code limited to matching heights only so the width comes from CSS variables.
+        const backBtn = document.querySelector("button[onclick*=\"index.html\"]");
+        backBtn.style.maxHeight = ht + 'px';
+      }
+
+      matchWaitingToggleToBackButton();
+      window.addEventListener('resize', matchWaitingToggleToBackButton);
+    });
+  </script>
+  <script>
+    // Ensure hamburger works: toggle class + accessibility attributes
+    function toggleMenu() {
+      const nav = document.getElementById('navLinks');
+      const btn = document.querySelector('.menu-toggle');
+      if (!nav || !btn) return;
+      const opened = nav.classList.toggle('show');
+      btn.setAttribute('aria-expanded', opened ? 'true' : 'false');
+      nav.setAttribute('aria-hidden', opened ? 'false' : 'true');
+    }
+
+    // Close menu when a nav link is clicked (mobile UX)
+    document.addEventListener('click', (e) => {
+      const nav = document.getElementById('navLinks');
+      const btn = document.querySelector('.menu-toggle');
+      if (!nav || !btn) return;
+      const anchor = e.target.closest('.nav-links a');
+      if (anchor && nav.classList.contains('show')) {
+        nav.classList.remove('show');
+        btn.setAttribute('aria-expanded', 'false');
+        nav.setAttribute('aria-hidden', 'true');
+      }
+    });
+
+    // Initialize ARIA attributes for hamburger and nav
+    (function initHamburger() {
+      const nav = document.getElementById('navLinks');
+      const btn = document.querySelector('.menu-toggle');
+      if (!nav || !btn) return;
+      btn.setAttribute('role', 'button');
+      btn.setAttribute('aria-controls', 'navLinks');
+      btn.setAttribute('aria-expanded', 'false');
+      nav.setAttribute('aria-hidden', 'true');
+    })();
+
+    // Ensure menu closes when resizing to desktop
+    window.addEventListener('resize', () => {
+      const nav = document.getElementById('navLinks');
+      const btn = document.querySelector('.menu-toggle');
+      if (!nav || !btn) return;
+      if (window.innerWidth > 768 && nav.classList.contains('show')) {
+        nav.classList.remove('show');
+        btn.setAttribute('aria-expanded', 'false');
+        nav.setAttribute('aria-hidden', 'true');
       }
     });
   </script>
-
-  <!-- Hamburger menu toggle for mobile -->
-  <script>
-    function toggleMenu() {
-      document.getElementById('navLinks').classList.toggle('show');
-    }
-
-    // Optional: Close menu when a link is clicked (for better UX)
-    document.addEventListener('DOMContentLoaded', function () {
-      document.querySelectorAll('.nav-links a').forEach(link => {
-        link.addEventListener('click', () => {
-          document.getElementById('navLinks').classList.remove('show');
-        });
-      });
-    });
-  </script>
+<!-- Code injected by live-server -->
+<script>
+	// <![CDATA[  <-- For SVG support
+	if ('WebSocket' in window) {
+		(function () {
+			function refreshCSS() {
+				var sheets = [].slice.call(document.getElementsByTagName("link"));
+				var head = document.getElementsByTagName("head")[0];
+				for (var i = 0; i < sheets.length; ++i) {
+					var elem = sheets[i];
+					var parent = elem.parentElement || head;
+					parent.removeChild(elem);
+					var rel = elem.rel;
+					if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
+						var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
+						elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
+					}
+					parent.appendChild(elem);
+				}
+			}
+			var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
+			var address = protocol + window.location.host + window.location.pathname + '/ws';
+			var socket = new WebSocket(address);
+			socket.onmessage = function (msg) {
+				if ( msg.data == 'reload') window.location.reload();
+				else if (msg.data == 'refreshcss') refreshCSS();
+			};
+			if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer)) {
+				console.log('Live reload enabled.');
+				sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
+			}
+		})();
+	}
+	else {
+		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
+	}
+	// ]]></script>
 </body>
 </html>
