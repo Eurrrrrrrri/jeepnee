@@ -919,9 +919,9 @@
         </label>
       </div>
       <div id="loc-status">Permission: unknown</div>
-      <!-- NEW: show when user is beyond waiting areas -->
+      <!-- Message shown when user is waiting=Yes but located outside all waiting areas -->
       <div id="beyond-message" style="display:none; color:#FF6B6B; font-weight:600; font-size:0.95rem; margin-top:6px;">
-        You are beyond the waiting areas
+        You are beyond the waiting areas.
       </div>
     </div>
 
@@ -1149,41 +1149,30 @@
       }
     }
 
-    // call this right after user info is created/updated
-    createOrUpdateUserInfo().then(() => {
-      incrementAccessCount().catch(() => {});
-    }).catch(() => {
-      // if createOrUpdateUserInfo fails, still try to increment
-      incrementAccessCount().catch(() => {});
-    });
+    // ensure a record exists immediately
+    // createOrUpdateUserInfo().catch(() => {});
+    // incrementAccessCount().catch(() => {});
+    // ensure record exists, increment access count, then sync waitingStatus ONCE to local toggle
+    (async function initUserInfoAndSyncWaiting() {
+      try {
+        await createOrUpdateUserInfo();
+        await incrementAccessCount();
+      } catch (e) {
+        // ignore errors from create/update; still attempt sync
+      }
 
-    // --- Sync waitingStatus once to match the local toggle state (run once after init) ---
-    async function syncWaitingStatusToToggleOnce() {
       try {
         const checkbox = document.getElementById('loc-toggle');
-        const desired = checkbox && checkbox.checked ? 'Yes' : 'No';
-
-        // Read current DB value once
+        const desired = (checkbox && checkbox.checked) ? 'Yes' : 'No';
         const snap = await get(userInfoRef);
         const current = snap.exists() ? snap.val().waitingStatus : null;
-
-        // Only write if different (one-time write). This avoids loops/continuous writes.
+        // write only if different to avoid unnecessary writes
         if (current !== desired) {
           await update(userInfoRef, { waitingStatus: desired, lastSeen: serverTimestamp() });
         }
       } catch (err) {
         console.warn('syncWaitingStatusToToggleOnce failed', err);
       }
-    }
-
-    // Run the sync once after we have ensured the user record and incremented accessCount.
-    (async () => {
-      try {
-        // Wait for initial create/update + increment to settle
-        await createOrUpdateUserInfo();
-        await incrementAccessCount();
-      } catch (e) { /* ignore */ }
-      syncWaitingStatusToToggleOnce().catch(() => {});
     })();
 
     // helper to update online/offline status; used from presence logic
@@ -1207,9 +1196,6 @@
         console.warn("setUserWaitingStatus failed", err);
       }
     };
-
-    // ensure a record exists immediately
-    createOrUpdateUserInfo().catch(() => {});
 
     // When connection state changes, mark this visitor online and schedule onDisconnect to mark offline
     onValue(infoConnectedRef, (snap) => {
@@ -1337,11 +1323,12 @@
     }
 
     // remove this device's location from userInformation (call from disableLocationTracking)
-    // UPDATED: Keep all location data including timestamp for historical record
     async function removeThisWaitingUser() {
       try {
-        // Do nothing — all location data is preserved for historical reference
-        // When user stops tracking, we keep latitude, longitude, destination, and locationTimestamp
+        // NO-OP: preserve latitude/longitude/locationTimestamp/destination when user toggles off.
+        // Historically we cleared these fields when users stopped sharing; requirement changed —
+        // keep the latest values for record-keeping. This function intentionally does nothing.
+        return;
       } catch (err) {
         console.error("removeThisWaitingUser error:", err);
       }
@@ -1557,9 +1544,19 @@
       const el = document.getElementById('loc-status');
       if (el) el.textContent = "Permission: " + text;
     }
+
+    function escapeHtml(str) {
+      return String(str || '').replace(/[&<>"'`=\/]/g, function (s) {
+        return {
+          '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;',
+          "'": '&#39;', '/': '&#x2F;', '`': '&#x60;', '=': '&#x3D;'
+        }[s];
+      });
+    }
+
     // Helper: distance (meters) between two lat/lng points (Haversine)
     function distanceMeters(lat1, lon1, lat2, lon2) {
-      const R = 6371000; // Earth radius in meters
+      const R = 6371000;
       const toRad = v => v * Math.PI / 180;
       const dLat = toRad(lat2 - lat1);
       const dLon = toRad(lon2 - lon1);
@@ -1569,7 +1566,8 @@
       const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
       return R * c;
     }
-    // Helper: check if coords are inside any defined waiting area
+    
+    // Helper: returns true if given coordinates are inside any defined waiting area
     function isWithinAnyWaitingArea(lat, lng) {
       try {
         const areas = window.barangayAreas || {};
@@ -1579,12 +1577,160 @@
           const d = distanceMeters(lat, lng, a.lat, a.lng);
           if (d <= (Number(a.radius) || 0)) return true;
         }
-      } catch (e) {
-        console.warn('isWithinAnyWaitingArea error', e);
-      }
+      } catch (e) { console.warn('isWithinAnyWaitingArea error', e); }
       return false;
     }
 
+    function generateInfoContent(key, marker) {
+      const data = (window.jeepneyData && window.jeepneyData[key]) ? window.jeepneyData[key] : {};
+      const title = escapeHtml(data.title || key);
+      const link = data.link ? escapeHtml(data.link) : '#';
+
+      return `
+        <div class="info-window-content" style="min-width:100px;max-width:160px;font-family:inherit;color:var(--text-color);padding:4px">
+          <div class="iw-title" style="font-weight:600;margin-bottom:4px;font-size:0.9rem;text-align:center">${title}</div>
+          <a class="info-window-button" href="${link}" target="_blank" rel="noopener" 
+             style="display:block;padding:6px 8px;background:var(--accent-blue);color:#fff;border-radius:4px;
+                    text-decoration:none;font-weight:500;font-size:0.8rem;text-align:center">View details</a>
+        </div>
+      `;
+    }
+    window.generateInfoContent = generateInfoContent;
+
+    function centerMapOnPosition(position, zoomWhenCenter = 14) {
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+      const latLng = { lat, lng };
+
+      if (zoomWhenCenter !== false) {
+        map.setCenter(latLng);
+        map.setZoom(zoomWhenCenter === undefined ? 14 : zoomWhenCenter);
+      }
+
+      if (!window.userMarker) {
+        window.userMarker = new google.maps.Marker({
+          position: latLng,
+          map,
+          title: "You",
+          optimized: false,
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 8,
+            fillColor: "#4285F4",
+            fillOpacity: 1,
+            strokeColor: "#ffffff",
+            strokeWeight: 2
+          }
+        });
+
+        window.userMarker.addListener("click", function () {
+          if (!infoWindow) infoWindow = new google.maps.InfoWindow({ maxWidth: 220 });
+          infoWindow.setContent('<div class="info-window-content"><div class="iw-title">You are here.</div></div>');
+          infoWindow.open(map, window.userMarker);
+        });
+      } else {
+        window.userMarker.setPosition(latLng);
+        window.userMarker.setMap(map);
+      }
+
+      // Show "beyond" message if user is outside all waiting areas; hide otherwise
+      try {
+        const beyondEl = document.getElementById('beyond-message');
+        if (beyondEl) {
+          const inside = isWithinAnyWaitingArea(lat, lng);
+          beyondEl.style.display = inside ? 'none' : 'block';
+        }
+      } catch (e) {
+        console.warn('beyond message update failed', e);
+      }
+    }
+
+    // enableLocationTracking / disableLocationTracking (use your existing logic)
+    function enableLocationTracking() {
+      if (!navigator.geolocation) {
+        updateLocStatus("unsupported");
+        document.getElementById('loc-toggle').checked = false;
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          window.userLocationEnabled = true;
+          updateLocStatus("granted");
+          centerMapOnPosition(pos);
+          window.lastKnownPosition = pos;
+          if (typeof window.updateUserLocation === 'function') {
+            window.updateUserLocation(pos); // initial update
+          }
+
+          // ensure we have a single periodic writer every 10s
+          if (window.userLocationIntervalId) {
+            clearInterval(window.userLocationIntervalId);
+            window.userLocationIntervalId = null;
+          }
+          window.userLocationIntervalId = setInterval(() => {
+            if (window.lastKnownPosition && typeof window.updateUserLocation === 'function') {
+              window.updateUserLocation(window.lastKnownPosition);
+            }
+          }, 30_000); // 10 seconds
+
+          if (window.userLocationWatchId == null) {
+            window.userLocationWatchId = navigator.geolocation.watchPosition(
+              (position) => {
+                // update last known position; periodic writer and immediate writer will use this
+                window.lastKnownPosition = position;
+                // try an immediate write (updateUserLocation will enforce throttle)
+                if (typeof window.updateUserLocation === 'function') {
+                  window.updateUserLocation(position);
+                }
+                centerMapOnPosition(position, false);
+              },
+              (err) => {
+                console.warn("watchPosition error", err);
+                if (err.code === err.PERMISSION_DENIED) {
+                  disableLocationTracking(true);
+                }
+              },
+              { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+            );
+          }
+        },
+        (err) => {
+          console.warn("getCurrentPosition error", err);
+          updateLocStatus(err.code === 1 ? "denied" : "error");
+          document.getElementById('loc-toggle').checked = false;
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    }
+
+    function disableLocationTracking(silent = false) {
+      window.userLocationEnabled = false;
+      if (window.userLocationWatchId != null) {
+        navigator.geolocation.clearWatch(window.userLocationWatchId);
+        window.userLocationWatchId = null;
+      }
+      if (window.userMarker) {
+        window.userMarker.setMap(null);
+      }
+
+      // stop periodic writer
+      if (window.userLocationIntervalId) {
+        clearInterval(window.userLocationIntervalId);
+        window.userLocationIntervalId = null;
+      }
+      window.lastKnownPosition = null;
+
+      // Do NOT remove or clear the user's stored location/destination/timestamps here.
+      // Historical data is preserved in userInformation; keep fields intact.
+
+      // Hide beyond-message when tracking is disabled
+      try { const b = document.getElementById('beyond-message'); if (b) b.style.display = 'none'; } catch(e){}
+
+      if (!silent) updateLocStatus("off");
+    }
+
+    // Replace the existing setupUserLocationControls() function with this version
     function setupUserLocationControls() {
       const checkbox = document.getElementById('loc-toggle');
       if (!checkbox) return;
@@ -1634,9 +1780,7 @@
             try { await window.setUserWaitingStatus('Yes'); } catch (e) { console.warn(e); }
           }
 
-          if (typeof enableLocationTracking === 'function') {
-            try { enableLocationTracking(); } catch (e) { console.warn('enableLocationTracking error', e); }
-          }
+          enableLocationTracking();
         });
       }
 
@@ -1647,10 +1791,9 @@
           // make sure this is treated as user turning it off
           checkbox.checked = false;
           updateLocStatus('off');
-          if (typeof disableLocationTracking === 'function') {
-            try { disableLocationTracking(); } catch (e) { console.warn('disableLocationTracking error', e); }
-          }
-          // mark waiting status = No (always attempt this)
+          disableLocationTracking();
+
+          // mark waiting status = No
           if (typeof window.setUserWaitingStatus === 'function') {
             window.setUserWaitingStatus('No').catch(() => {});
           }
@@ -1674,36 +1817,17 @@
         updateLocStatus('unknown');
       }
 
-      // When the user toggles ON, check whether they are inside waiting areas.
-      // If outside, show a message below the toggle; still open the destination modal.
+      // Always show the modal when the user toggles the checkbox ON
       checkbox.addEventListener('change', function () {
-        const beyondEl = document.getElementById('beyond-message');
         if (this.checked) {
-          if (!navigator.geolocation) {
-            if (beyondEl) beyondEl.style.display = 'none';
-            openModal();
-            return;
-          }
-          navigator.geolocation.getCurrentPosition((pos) => {
-            const lat = pos.coords.latitude;
-            const lng = pos.coords.longitude;
-            const inside = isWithinAnyWaitingArea(lat, lng);
-            if (beyondEl) beyondEl.style.display = inside ? 'none' : 'block';
-            // continue with normal flow (destination modal)
-            openModal();
-          }, (err) => {
-            // on error, don't show beyond-message and proceed
-            if (beyondEl) beyondEl.style.display = 'none';
-            openModal();
-          }, { timeout: 7000 });
+          // always prompt for destination first; do not enable tracking until Confirm
+          openModal();
         } else {
           // user turned it off
-          if (document.getElementById('beyond-message')) document.getElementById('beyond-message').style.display = 'none';
           closeModal();
-          if (typeof disableLocationTracking === 'function') {
-            try { disableLocationTracking(); } catch (e) { console.warn('disableLocationTracking error', e); }
-          }
-          // update waiting status = No (always attempt this)
+          disableLocationTracking();
+
+          // update waiting status = No
           if (typeof window.setUserWaitingStatus === 'function') {
             window.setUserWaitingStatus('No').catch(() => {});
           }
@@ -1716,9 +1840,7 @@
           closeModal();
           checkbox.checked = false;
           updateLocStatus('off');
-          if (typeof disableLocationTracking === 'function') {
-            try { disableLocationTracking(); } catch (err) { console.warn('disableLocationTracking error', err); }
-          }
+          disableLocationTracking();
         }
       });
     }
@@ -1775,6 +1897,7 @@
           fillOpacity: 0.12,
           map: map,
           center: { lat: data.lat, lng: data.lng },
+
           radius: Number(data.radius) || 300
         });
         circle.setVisible(false); // start hidden
@@ -1808,7 +1931,7 @@
         google.maps.event.addListener(map, 'idle', function() {
           Object.values(window.barangayLabels || {}).forEach(lbl => {
             try { if (lbl && lbl.overlay && lbl.overlay.getMap()) lbl.overlay.draw(); } catch(e){}
- });
+          });
         });
         createWaitingAreas._idleListenerAdded = true;
       }
@@ -1820,9 +1943,8 @@
     window.waitingAreasPollIntervalId = null;
 
     function applyWaitingAreasFromCounts() {
-      const enabled = document.getElementById('waiting-areas-toggle')?.checked === true;
+           const enabled = document.getElementById('waiting-areas-toggle')?.checked === true;
       
-           
       // Check if any area has waitingCount > 0
       const hasAnyWaiting = Object.values(window.barangayAreas || {}).some(area => Number(area.waitingCount || 0) > 0);
       
@@ -1844,7 +1966,7 @@
           try { label.overlay.setMap(shouldShow ? map : null); } catch (e) { console.warn(e); }
         }
       });
-       }
+    }
 
     function startWaitingAreasPolling() {
       // immediate apply
@@ -1875,18 +1997,35 @@
     // Attach listener to the toggle and initialize state
     (function attachWaitingTogglePolling() {
       const waitingToggle = document.getElementById('waiting-areas-toggle');
+      const noWaitingMsg = document.getElementById('no-waiting-message');
       if (!waitingToggle) return;
-
+      
       // initialize: ensure overlays hidden until user enables the toggle
       stopWaitingAreasPolling();
+
+      // helper to update "No waiting users" visibility immediately
+      function updateNoWaitingMessage() {
+        const enabled = waitingToggle.checked === true;
+        const hasAnyWaiting = Object.values(window.barangayAreas || {}).some(area => Number(area.waitingCount || 0) > 0);
+        if (!noWaitingMsg) return;
+        // Show only when toggle is ON and there are zero waiting users
+        noWaitingMsg.style.display = (enabled && !hasAnyWaiting) ? 'block' : 'none';
+      }
 
       waitingToggle.addEventListener('change', function (e) {
         const enabled = Boolean(e.target.checked);
         if (enabled) startWaitingAreasPolling(); else stopWaitingAreasPolling();
+        // update the "No waiting users" message right away to reflect toggle state
+        updateNoWaitingMessage();
       });
 
       // if checkbox is pre-checked on load, start polling
       if (waitingToggle.checked) startWaitingAreasPolling();
+
+      // Ensure the message is correct on initial load
+      // applyWaitingAreasFromCounts will set labels/visibility; call it once now and then update message
+      try { applyWaitingAreasFromCounts(); } catch (e) {}
+      updateNoWaitingMessage();
     })();
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -1945,44 +2084,23 @@
         btn.setAttribute('aria-expanded', 'false');
         nav.setAttribute('aria-hidden', 'true');
       }
-    });
-  </script>
-<!-- Code injected by live-server -->
-<script>
-	// <![CDATA[  <-- For SVG support
-	if ('WebSocket' in window) {
-		(function () {
-			function refreshCSS() {
-				var sheets = [].slice.call(document.getElementsByTagName("link"));
-				var head = document.getElementsByTagName("head")[0];
-				for (var i = 0; i < sheets.length; ++i) {
-					var elem = sheets[i];
-					var parent = elem.parentElement || head;
-					parent.removeChild(elem);
-					var rel = elem.rel;
-					if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
-						var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
-						elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
-					}
-					parent.appendChild(elem);
-				}
-			}
-			var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
-			var address = protocol + window.location.host + window.location.pathname + '/ws';
-			var socket = new WebSocket(address);
-			socket.onmessage = function (msg) {
-				if ( msg.data == 'reload') window.location.reload();
-				else if (msg.data == 'refreshcss') refreshCSS();
-			};
-			if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer)) {
-				console.log('Live reload enabled.');
-				sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
-			}
-		})();
-	}
-	else {
-		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
-	}
-	// ]]></script>
-</body>
+    });</html></script>
+
+
+
+
+
+sole.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');	}		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');	// ]]>	else {script>	}	}	}		})();			}sole.log('Live reload enabled.');				sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);	if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer)) {				console.log('Live reload enabled.');		})();			}				if ( msg.data == 'reload') window.location.reload();			socket.onmessage = function (msg) {			var socket = new WebSocket(address);			var address = protocol + window.location.host + window.location.pathname + '/ws';			var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';			}				}					parent.appendChild(elem);					}						elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());						var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');					if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {					var rel = elem.rel;					parent.removeChild(elem);					var parent = elem.parentElement || head;					var elem = sheets[i];				else if (msg.data == 'refreshcss') refreshCSS();				for (var i = 0; i < sheets.length; ++i) {				var head = document.getElementsByTagName("head")[0];				var sheets = [].slice.call(document.getElementsByTagName("link"));			function refreshCSS() {		(function () {	if ('WebSocket' in window) {	// <![CDATA[  <-- For SVG support<script><!-- Code injected by live-server -->  </script></body>
 </html>
+
+
+
+
+
+
+
+
+
+
+</html>	}		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');	}		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');	// ]]>	else {script>	}	}	}		})();			}sole.log('Live reload enabled.');				sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);	if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {				console.log('Live reload enabled.');		})();			}				if ( msg.data == 'reload') window.location.reload();			socket.onmessage = function (msg) {			var socket = new WebSocket(address);			var address = protocol + window.location.host + window.location.pathname + '/ws';			var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';			}				}					parent.appendChild(elem);					}						elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());						var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');					if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {					var rel = elem.rel;					parent.removeChild(elem);					var parent = elem.parentElement || head;					var elem = sheets[i];				else if (msg.data == 'refreshcss') refreshCSS();				for (var i = 0; i < sheets.length; ++i) {				var head = document.getElementsByTagName("head")[0];				var sheets = [].slice.call(document.getElementsByTagName("link"));			function refreshCSS() {		(function () {	if ('WebSocket' in window) {	// <![CDATA[  <-- For SVG support<script><!-- Code injected by live-server -->  </script></body>
+</html>	}		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');	}		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');	// ]]>	else {script>	}	}	}		})();			}sole.log('Live reload enabled.');				sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);	if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer)) {				console.log('Live reload enabled.');		})();			}				if ( msg.data == 'reload') window.location.reload();			socket.onmessage = function (msg) {			var socket = new WebSocket(address);			var address = protocol + window.location.host + window.location.pathname + '/ws';			var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';			}				}					parent.appendChild(elem);					}						elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());						var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');					if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {					var rel = elem.rel;					parent.removeChild(elem);					var parent = elem.parentElement || head;					var elem = sheets[i];				else if (msg.data == 'refreshcss') refreshCSS();				for (var i = 0; i < sheets.length; ++i) {				var head = document.getElementsByTagName("head")[0];				var sheets = [].slice.call(document.getElementsByTagName("link"));			function refreshCSS() {		(function () {	if ('WebSocket' in window) {	// <![CDATA[  <-- For SVG support<script><!-- Code injected by live-server -->  </script></body>
