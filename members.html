@@ -919,6 +919,10 @@
         </label>
       </div>
       <div id="loc-status">Permission: unknown</div>
+      <!-- Message shown when user is waiting=Yes but located outside all waiting areas -->
+      <div id="beyond-message" style="display:none; color:#FF6B6B; font-weight:600; font-size:0.95rem; margin-top:6px;">
+        You are beyond the waiting areas.
+      </div>
     </div>
 
     <!-- Destination prompt shown when user enables location (replaced by modal) -->
@@ -1043,7 +1047,8 @@
       onDisconnect,
       serverTimestamp,
       remove,
-      push
+      // push,  <-- removed
+      get
     } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
     const firebaseConfig = {
@@ -1060,56 +1065,219 @@
     const database = getDatabase(app);
     const waitingUsersRef = ref(database, 'waitingUsers');
 
-    // --- Presence tracking: update #onlineCount ---
-    const connectionsRef = ref(database, 'connections'); // list of connected clients
+    // --- Presence tracking (reworked): no 'connections' branch anymore ---
     const infoConnectedRef = ref(database, '.info/connected'); // server connection status
     let thisConnectionRef = null;
 
-    // When connection state changes to true, add this client to connections and remove on disconnect
+    // --- User information (new) ---
+    function getOrCreateUserInfoId() {
+      let id = localStorage.getItem('userInfoId');
+      if (!id) {
+        id = 'visitor_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('userInfoId', id);
+      }
+      return id;
+    }
+    const userInfoId = getOrCreateUserInfoId();
+    const userInfoRef = ref(database, `userInformation/${userInfoId}`);
+
+    async function createOrUpdateUserInfo() {
+      try {
+        // gather common client metadata
+        const ua = navigator.userAgent || '';
+        const lang = navigator.language || '';
+        const platform = navigator.platform || '';
+        const screenRes = (window.screen && (screen.width + 'x' + screen.height)) || '';
+        const tz = (Intl && Intl.DateTimeFormat && Intl.DateTimeFormat().resolvedOptions().timeZone) || '';
+        const referrer = document.referrer || '';
+
+        // check if a record already exists so we only set firstSeen once
+        const snap = await get(userInfoRef);
+        if (!snap.exists()) {
+          // create initial record with categorized structure (NO firstLatitude/firstLongitude yet)
+          await set(userInfoRef, {
+            firstUseInfo: {
+              firstSeen: serverTimestamp()
+            },
+            currentData: {
+              status: 'online',
+              waitingStatus: 'No',
+              accessCount: 1
+            },
+            deviceInfo: {
+              userAgent: ua,
+              language: lang,
+              platform: platform,
+              screenResolution: screenRes,
+              timezone: tz,
+              referrer: referrer
+            }
+          });
+        } else {
+          // update only currentData and deviceInfo (keep firstUseInfo untouched)
+          await update(userInfoRef, {
+            'currentData/status': 'online',
+            'deviceInfo/userAgent': ua,
+            'deviceInfo/language': lang,
+            'deviceInfo/platform': platform,
+            'deviceInfo/screenResolution': screenRes,
+            'deviceInfo/timezone': tz,
+            'deviceInfo/referrer': referrer
+          });
+        }
+      } catch (err) {
+        console.warn("createOrUpdateUserInfo failed", err);
+      }
+    }
+
+    // Helper: capture first location when user confirms they are waiting (has permission)
+    async function captureFirstLocation() {
+      try {
+        const snap = await get(userInfoRef);
+        if (snap.exists() && snap.val().firstUseInfo) {
+          // only capture if firstLatitude/firstLongitude don't already exist
+          if (snap.val().firstUseInfo.firstLatitude != null || snap.val().firstUseInfo.firstLongitude != null) {
+            return; // already captured
+          }
+        }
+
+        // get current position (user has already granted permission via geolocation.getCurrentPosition in enableLocationTracking)
+        const position = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
+        });
+
+        const firstLat = position.coords.latitude;
+        const firstLng = position.coords.longitude;
+
+        await update(userInfoRef, {
+          'firstUseInfo/firstLatitude': firstLat,
+          'firstUseInfo/firstLongitude': firstLng
+        });
+      } catch (e) {
+        console.warn('captureFirstLocation failed', e);
+      }
+    }
+
+    // expose for location tracking code to call after permission is granted
+    window.captureFirstLocation = captureFirstLocation;
+
+    // Helper: increment access count for this user
+    async function incrementAccessCount() {
+      try {
+        const snap = await get(userInfoRef);
+        if (snap.exists()) {
+          const currentCount = (snap.val().currentData && snap.val().currentData.accessCount) || 0;
+          await update(userInfoRef, {
+            'currentData/accessCount': currentCount + 1
+          });
+        } else {
+          // If record doesn't exist yet, set it to 1
+          await update(userInfoRef, {
+            'currentData/accessCount': 1
+          });
+        }
+      } catch (err) {
+        console.warn("incrementAccessCount failed", err);
+      }
+    }
+
+    // ensure a record exists, increment access count, then sync waitingStatus ONCE to local toggle
+    (async function initUserInfoAndSyncWaiting() {
+      try {
+        await createOrUpdateUserInfo();
+        await incrementAccessCount();
+      } catch (e) {
+        // ignore errors from create/update; still attempt sync
+      }
+
+      try {
+        const checkbox = document.getElementById('loc-toggle');
+        const desired = (checkbox && checkbox.checked) ? 'Yes' : 'No';
+        const snap = await get(userInfoRef);
+        const current = snap.exists() && snap.val().currentData ? snap.val().currentData.waitingStatus : null;
+        // write only if different to avoid unnecessary writes
+        if (current !== desired) {
+          await update(userInfoRef, { 'currentData/waitingStatus': desired });
+        }
+      } catch (err) {
+        console.warn('syncWaitingStatusToToggleOnce failed', err);
+      }
+    })();
+
+    // helper to update online/offline status; used from presence logic
+    async function setUserOnlineStatus(status) {
+      try {
+        await update(userInfoRef, {
+          'currentData/status': status
+        });
+      } catch (err) {
+        console.warn("setUserOnlineStatus failed", err);
+      }
+    }
+
+    // helper for waiting status ("Yes"/"No")
+    window.setUserWaitingStatus = async function (val) {
+      try {
+        const v = val === 'Yes' ? 'Yes' : 'No';
+        await update(userInfoRef, { 'currentData/waitingStatus': v });
+      } catch (err) {
+        console.warn("setUserWaitingStatus failed", err);
+      }
+    };
+
+    // When connection state changes, mark this visitor online and schedule onDisconnect to mark offline
     onValue(infoConnectedRef, (snap) => {
       const connected = snap.val() === true;
-      if (connected && !thisConnectionRef) {
-        thisConnectionRef = push(connectionsRef);
-        set(thisConnectionRef, { connectedAt: serverTimestamp() }).catch(console.error);
-        onDisconnect(thisConnectionRef).remove().catch(console.error);
+      if (connected) {
+        // mark user info as online and set onDisconnect to mark offline
+        setUserOnlineStatus('online').catch(() => {});
+        try {
+          // schedule offline update on disconnect
+          onDisconnect(userInfoRef).update({ 'currentData/status': 'offline' }).catch(() => {});
+        } catch (e) {
+          // ignore if SDK variation throws
+        }
+      } else {
+        // no active connection -> rely on server onDisconnect or client-side updates
       }
     });
 
-    // Keep a live count in the UI
-    onValue(connectionsRef, (snap) => {
-      const count = snap.exists() ? snap.size : 0;
-      const el = document.getElementById('onlineCount');
-      if (el) el.textContent = String(count);
+    // Drive "Currently Online Devices" from userInformation.{id}.currentData.status
+    const userInformationRef = ref(database, 'userInformation');
+    onValue(userInformationRef, (snapshot) => {
+      try {
+        const data = snapshot.val() || {};
+        let onlineCount = 0;
+        Object.values(data).forEach(u => {
+          if (u && u.currentData && u.currentData.status === 'online') onlineCount++;
+        });
+        const el = document.getElementById('onlineCount');
+        if (el) el.textContent = String(onlineCount);
+      } catch (err) {
+        console.warn('update onlineCount failed', err);
+      }
     });
 
-    let showWaitingAreasEnabled = false; // track user's toggle preference
+    let showWaitingAreasEnabled = false;
 
-    // Keep overlays in sync with DB (update counts and show/hide based on count AND toggle state)
-    onValue(waitingUsersRef, (snapshot) => {
-      const waitingUsersRaw = snapshot.val() || {};
-      const now = Date.now();
-      const STALE_MS = 3 * 60 * 1000; // 3 minutes
-
-      // Collect stale ids to remove
-      const staleIds = [];
-      Object.entries(waitingUsersRaw).forEach(([id, user]) => {
-        const ts = Number(user?.timestamp) || 0;
-        if (ts && now - ts > STALE_MS) staleIds.push(id);
-      });
-
-      // Remove stale entries
-      staleIds.forEach(id => {
-        remove(ref(database, `waitingUsers/${id}`)).catch(() => {});
-        delete waitingUsersRaw[id];
-      });
+    // Keep overlays in sync with DB — now reads from userInformation with new categorized structure
+    onValue(userInformationRef, (snapshot) => {
+      const allUsers = snapshot.val() || {};
 
       // reset counts
       Object.values(window.barangayAreas || {}).forEach(a => a.waitingCount = 0);
 
-      // count users per area
-      Object.values(waitingUsersRaw).forEach(user => {
-        if (!user || user.latitude == null || user.longitude == null) return;
-        const u = new google.maps.LatLng(user.latitude, user.longitude);
+      // count users per area (only those with waitingStatus='Yes' in currentData)
+      Object.values(allUsers).forEach(user => {
+        // Check new structure: user.currentData.waitingStatus must be 'Yes'
+        if (!user || !user.currentData || user.currentData.waitingStatus !== 'Yes') return;
+        
+        // Get coordinates from new structure: currentData.latitude/longitude
+        const lat = user.currentData.latitude;
+        const lng = user.currentData.longitude;
+        if (lat == null || lng == null) return;
+        
+        const u = new google.maps.LatLng(lat, lng);
         Object.entries(window.barangayAreas || {}).forEach(([name, area]) => {
           const c = new google.maps.LatLng(area.lat, area.lng);
           const d = google.maps.geometry.spherical.computeDistanceBetween(u, c);
@@ -1124,9 +1292,6 @@
           label.element.textContent = String(area.waitingCount || 0);
         }
 
-        // Show circle and overlay only if:
-        // 1. Toggle is ON (showWaitingAreasEnabled === true)
-        // 2. AND waitingCount > 0
         const circle = window.barangayCircles && window.barangayCircles[name];
         const isVisible = showWaitingAreasEnabled && area.waitingCount > 0;
 
@@ -1142,68 +1307,46 @@
       });
     });
 
-    // persist device id so a single device writes a single record
-    function getOrCreateWaitingUserId() {
-      let id = localStorage.getItem('waitingUserId');
-      if (!id) {
-        id = 'user_' + Math.random().toString(36).substr(2,9);
-        localStorage.setItem('waitingUserId', id);
-      }
-      return id;
-    }
-
-    // update this device's waiting user record (throttled to 10s)
+    // update this device's waiting user record → now writes to userInformation.currentData
     async function updateUserLocation(position) {
       try {
         if (!position || !position.coords) return;
-
-        // persistent id for this device
-        const id = getOrCreateWaitingUserId();
         const now = Date.now();
         const lastSent = Number(localStorage.getItem('waitingUserLastSent') || 0);
-
-        // throttle: only write if at least 10 seconds passed since last write
-        const THROTTLE_MS = 30_000; // <-- change this value (ms) to adjust throttle
+        const THROTTLE_MS = 30_000;
         if (now - lastSent < THROTTLE_MS) return;
 
-        const userRef = ref(database, `waitingUsers/${id}`);
-
-        // Use update() instead of set() so existing fields (eg. destination) are preserved
-        await update(userRef, {
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          timestamp: serverTimestamp()
+        // Write location directly to userInformation.currentData
+        await update(userInfoRef, {
+          'currentData/latitude': position.coords.latitude,
+          'currentData/longitude': position.coords.longitude,
+          'currentData/locationTimestamp': serverTimestamp()
         });
 
-        // schedule removal on disconnect (safe to call repeatedly)
-        onDisconnect(userRef).remove();
-
-        // record last sent time
         localStorage.setItem('waitingUserLastSent', String(now));
       } catch (err) {
         console.error("updateUserLocation error:", err);
       }
     }
 
-    // remove this device's waiting user record (call from disableLocationTracking)
+    // remove this device's location from userInformation (call from disableLocationTracking)
     async function removeThisWaitingUser() {
       try {
-        const id = localStorage.getItem('waitingUserId');
-        if (!id) return;
-        await remove(ref(database, `waitingUsers/${id}`));
+        // NO-OP: preserve latitude/longitude/locationTimestamp/destination when user toggles off.
+        return;
       } catch (err) {
         console.error("removeThisWaitingUser error:", err);
       }
     }
 
-    // add this inside the Firebase Integration <script type="module"> block (near window.updateUserLocation / window.removeThisWaitingUser)
+    // set destination in userInformation.currentData (not waitingUsers)
     async function setUserDestination(destination) {
       try {
         if (!destination) return;
-        const id = getOrCreateWaitingUserId();
-        // write destination string under waitingUsers/{id}/destination
-        const destRef = ref(database, `waitingUsers/${id}/destination`);
-        await set(destRef, destination);
+        // write destination string under userInformation/{id}/currentData/destination
+        await update(userInfoRef, {
+          'currentData/destination': destination
+        });
       } catch (err) {
         console.error("setUserDestination error:", err);
       }
@@ -1211,8 +1354,6 @@
 
     // expose for other scripts to call
     window.setUserDestination = setUserDestination;
-
-    // expose update/remove helpers so map script can call them
     window.updateUserLocation = updateUserLocation;
     window.removeThisWaitingUser = removeThisWaitingUser;
   // jeepneys listener (unchanged) — keep here so markers still update from DB
@@ -1417,6 +1558,33 @@
       });
     }
 
+    // Helper: distance (meters) between two lat/lng points (Haversine)
+    function distanceMeters(lat1, lon1, lat2, lon2) {
+      const R = 6371000;
+      const toRad = v => v * Math.PI / 180;
+      const dLat = toRad(lat2 - lat1);
+      const dLon = toRad(lon2 - lon1);
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
+    }
+    
+    // Helper: returns true if given coordinates are inside any defined waiting area
+    function isWithinAnyWaitingArea(lat, lng) {
+      try {
+        const areas = window.barangayAreas || {};
+        for (const key in areas) {
+          const a = areas[key];
+          if (!a || typeof a.lat !== 'number' || typeof a.lng !== 'number' || typeof a.radius !== 'number') continue;
+          const d = distanceMeters(lat, lng, a.lat, a.lng);
+          if (d <= (Number(a.radius) || 0)) return true;
+        }
+      } catch (e) { console.warn('isWithinAnyWaitingArea error', e); }
+      return false;
+    }
+
     function generateInfoContent(key, marker) {
       const data = (window.jeepneyData && window.jeepneyData[key]) ? window.jeepneyData[key] : {};
       const title = escapeHtml(data.title || key);
@@ -1468,6 +1636,17 @@
         window.userMarker.setPosition(latLng);
         window.userMarker.setMap(map);
       }
+
+      // Show "beyond" message if user is outside all waiting areas; hide otherwise
+      try {
+        const beyondEl = document.getElementById('beyond-message');
+        if (beyondEl) {
+          const inside = isWithinAnyWaitingArea(lat, lng);
+          beyondEl.style.display = inside ? 'none' : 'block';
+        }
+      } catch (e) {
+        console.warn('beyond message update failed', e);
+      }
     }
 
     // enableLocationTracking / disableLocationTracking (use your existing logic)
@@ -1486,6 +1665,11 @@
           window.lastKnownPosition = pos;
           if (typeof window.updateUserLocation === 'function') {
             window.updateUserLocation(pos); // initial update
+          }
+
+          // Capture first location now that user has granted permission
+          if (typeof window.captureFirstLocation === 'function') {
+            window.captureFirstLocation().catch(() => {});
           }
 
           // ensure we have a single periodic writer every 10s
@@ -1546,10 +1730,11 @@
       }
       window.lastKnownPosition = null;
 
-      // remove waitingUsers record if helper available
-      if (typeof window.removeThisWaitingUser === 'function') {
-        window.removeThisWaitingUser().catch(err => console.warn("remove waiting user failed", err));
-      }
+      // Do NOT remove or clear the user's stored location/destination/timestamps here.
+      // Historical data is preserved in userInformation; keep fields intact.
+
+      // Hide beyond-message when tracking is disabled
+      try { const b = document.getElementById('beyond-message'); if (b) b.style.display = 'none'; } catch(e){}
 
       if (!silent) updateLocStatus("off");
     }
@@ -1598,6 +1783,12 @@
           if (typeof filterMarkersByRoute === 'function') filterMarkersByRoute(val);
 
           closeModal();
+
+          // mark waiting status = Yes (user confirmed they are waiting)
+          if (typeof window.setUserWaitingStatus === 'function') {
+            try { await window.setUserWaitingStatus('Yes'); } catch (e) { console.warn(e); }
+          }
+
           enableLocationTracking();
         });
       }
@@ -1610,6 +1801,11 @@
           checkbox.checked = false;
           updateLocStatus('off');
           disableLocationTracking();
+
+          // mark waiting status = No
+          if (typeof window.setUserWaitingStatus === 'function') {
+            window.setUserWaitingStatus('No').catch(() => {});
+          }
         });
       }
 
@@ -1627,18 +1823,24 @@
           };
         }).catch(() => updateLocStatus('unknown'));
       } else {
+
         updateLocStatus('unknown');
       }
 
       // Always show the modal when the user toggles the checkbox ON
       checkbox.addEventListener('change', function () {
-        if (this.checked) {
+        if ( this.checked) {
           // always prompt for destination first; do not enable tracking until Confirm
           openModal();
         } else {
           // user turned it off
           closeModal();
           disableLocationTracking();
+
+          // update waiting status = No
+          if (typeof window.setUserWaitingStatus === 'function') {
+            window.setUserWaitingStatus('No').catch(() => {});
+          }
         }
       });
 
@@ -1705,6 +1907,7 @@
           fillOpacity: 0.12,
           map: map,
           center: { lat: data.lat, lng: data.lng },
+
           radius: Number(data.radius) || 300
         });
         circle.setVisible(false); // start hidden
@@ -1744,11 +1947,13 @@
       }
     }
 
+
+
     // Polling control for waiting-area visibility
     window.waitingAreasPollIntervalId = null;
 
     function applyWaitingAreasFromCounts() {
-      const enabled = document.getElementById('waiting-areas-toggle')?.checked === true;
+           const enabled = document.getElementById('waiting-areas-toggle')?.checked === true;
       
       // Check if any area has waitingCount > 0
       const hasAnyWaiting = Object.values(window.barangayAreas || {}).some(area => Number(area.waitingCount || 0) > 0);
@@ -1802,14 +2007,27 @@
     // Attach listener to the toggle and initialize state
     (function attachWaitingTogglePolling() {
       const waitingToggle = document.getElementById('waiting-areas-toggle');
+      const noWaitingMsg = document.getElementById('no-waiting-message');
       if (!waitingToggle) return;
+
+      // Helper to update "No waiting users" message based on toggle state and waiting count
+      function updateNoWaitingMessage() {
+        if (!noWaitingMsg) return;
+        const enabled = waitingToggle.checked === true;
+        const hasAnyWaiting = Object.values(window.barangayAreas || {}).some(area => Number(area.waitingCount || 0) > 0);
+        // Show ONLY when toggle is ON AND no waiting users exist
+        noWaitingMsg.style.display = (enabled && !hasAnyWaiting) ? 'block' : 'none';
+      }
 
       // initialize: ensure overlays hidden until user enables the toggle
       stopWaitingAreasPolling();
+      updateNoWaitingMessage();
 
       waitingToggle.addEventListener('change', function (e) {
         const enabled = Boolean(e.target.checked);
         if (enabled) startWaitingAreasPolling(); else stopWaitingAreasPolling();
+        // Update message immediately when toggle changes
+        updateNoWaitingMessage();
       });
 
       // if checkbox is pre-checked on load, start polling
@@ -1874,43 +2092,7 @@
       }
     });
   </script>
-<!-- Code injected by live-server -->
-<script>
-	// <![CDATA[  <-- For SVG support
-	if ('WebSocket' in window) {
-		(function () {
-			function refreshCSS() {
-				var sheets = [].slice.call(document.getElementsByTagName("link"));
-				var head = document.getElementsByTagName("head")[0];
-				for (var i = 0; i < sheets.length; ++i) {
-					var elem = sheets[i];
-					var parent = elem.parentElement || head;
-					parent.removeChild(elem);
-					var rel = elem.rel;
-					if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
-						var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
-						elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
-					}
-					parent.appendChild(elem);
-				}
-			}
-			var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
-			var address = protocol + window.location.host + window.location.pathname + '/ws';
-			var socket = new WebSocket(address);
-			socket.onmessage = function (msg) {
-				if ( msg.data == 'reload') window.location.reload();
-				else if (msg.data == 'refreshcss') refreshCSS();
-			};
-			if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer)) {
-				console.log('Live reload enabled.');
-				sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
-			}
-		})();
-	}
-	else {
-		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
-	}
-	// ]]>
-</script>
 </body>
 </html>
+
+
