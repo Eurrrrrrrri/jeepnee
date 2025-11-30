@@ -32,9 +32,30 @@
     }
 
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Match index.html */
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       color: var(--text-color);
       background-color: var(--white);
+    }
+
+    /* Waiting area label styles */
+    .waiting-count-label {
+      position: absolute;
+      background: white;
+      border: 2px solid #FF6B6B;
+      border-radius: 50%;
+      color: #333;
+      font-weight: bold;
+      padding: 8px;
+      min-width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      z-index: 1000;
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      white-space: nowrap;
     }
 
     nav {
@@ -64,7 +85,7 @@
     }
 
     .logo-text {
-      font-size: 20px; /* Fixed size for consistency */
+      font-size: 20px;
       font-weight: bold;
       color: white;
       text-decoration: none;
@@ -104,7 +125,7 @@
 
     .container {
       max-width: 900px;
-      margin: 0 auto 2rem;  /* Remove top margin, keep bottom margin for gap below map */
+      margin: 0 auto 2rem;
       background: #fff;
       border-radius: 12px;
       box-shadow: 0 4px 24px rgba(0,0,0,0.07);
@@ -123,11 +144,11 @@
 
     #map {
       width: 100%;
-      height: 750px; /* 150% of the original 500px */
+      height: 750px;
       border-radius: 10px;
       border: 1px solid #e0e0e0;
       box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-      margin-bottom: 0; /* Remove bottom margin since action bar is next */
+      margin-bottom: 0;
     }
 
     button {
@@ -141,6 +162,7 @@
       margin-top: 10px;
       transition: background-color 0.3s;
     }
+
     button:hover {
       background-color: var(--cta-hover-blue);
     }
@@ -192,16 +214,13 @@
       color: white;
       display: flex;
       flex-direction: column;
-      /* center content vertically within the hero height */
       justify-content: center;
-      /* center text horizontally as well */
       align-items: center;
       text-align: center;
-      min-height: 200px;   /* reduced from 400px to 200px (half height) */
-      /* reduce extra padding so centering is consistent */
+      min-height: 200px;
       padding: 20px;
       border-radius: 0;
-      margin-top: 60px;      /* space below nav */
+      margin-top: 60px;
       margin-bottom: 2rem;
       box-shadow: 0 4px 24px rgba(0,0,0,0.07);
     }
@@ -211,126 +230,6 @@
       margin-bottom: 2rem; /* If your sections use 2rem, keep this. If they use a different value, match it here. */
     }
 
-    @media (max-width: 768px) {
-      .nav-links {
-        display: none;
-        position: absolute;
-        top: 60px;
-        right: 20px;
-        flex-direction: column;
-        background-color: var(--primary-teal);
-        border: 1px solid #ddd;
-        padding: 10px 20px;
-        border-radius: 5px;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.05);
-      }
-
-      .nav-links.show {
-        display: flex;
-      }
-
-      .menu-toggle {
-        display: block;
-      }
-
-      .container {
-        padding: 1rem;
-      }
-
-      #map {
-        height: 450px; /* 150% of the original mobile 300px */
-      }
-
-      section#contact {
-        padding: 30px 10px;
-      }
-    }
-
-    /* Help Us Section */
-    .help-section {
-      background: #fff; /* Match other sections */
-      padding: 40px 20px;
-      margin: 2rem auto 0 auto;
-      border-radius: 12px;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.07);
-      max-width: 900px;
-    }
-    .help-section h2 {
-      color: #1a3d4c;
-      margin-bottom: 1rem;
-      font-size: 1.5rem;
-      font-weight: 600;
-      text-align: center;
-    }
-    .help-section p {
-      max-width: 700px;
-      margin: 0 auto 20px;
-      text-align: center;
-      color: #2e3d49;
-      font-size: 1.1em;
-    }
-    .cta-button {
-      display: inline-block;
-      padding: 10px 24px;
-      background-color: var(--accent-blue);
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 16px;
-      font-weight: 600;
-      text-decoration: none;
-      cursor: pointer;
-      margin-top: 10px;
-      transition: background-color 0.3s;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    }
-    .cta-button:hover {
-      background-color: var(--cta-hover-blue);
-    }
-
-    /* Back button: use CTA hover behavior (override .container rules) */
-    .back-button {
-      background-color: var(--accent-blue);
-      color: white;
-      border: none;
-      border-radius: 999px; /* pill */
-      padding: 8px 16px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-      transition: background-color 0.3s;
-      width: var(--areas-toggle-width);
-      min-width: var(--areas-toggle-width);
-      max-width: var(--areas-toggle-width);
-      height: 36px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      box-sizing: border-box;
-    }
-
-    /* More specific selector to override .container button:hover (which is more specific) */
-    .container .back-button:hover {
-      background-color: var(--cta-hover-blue) !important;
-      color: white !important;
-    }
-
-    /* Make the Show/Hide toggle use the same hover background as the Give Feedback CTA.
-       This overrides the generic `.container label:hover` rule. */
-    .container .loc-toggle.areas-toggle-label:hover .loc-slider,
-    .container .loc-toggle.areas-toggle-label .loc-slider:hover {
-      background-color: var(--cta-hover-blue) !important;
-      color: #fff !important;
-    }
-
-    /* Apply same hover effect to the destination dropdown */
-    .container #to-select:hover {
-      background-color: var(--cta-hover-blue) !important;
-      color: white !important;
-    }
-
-    /* New: location permission UI */
     .location-section {
       background: #fff;
       padding: 40px 20px;
@@ -348,6 +247,7 @@
       font-size: 1.25rem;
       font-weight: 600;
     }
+
     .location-section p {
       max-width: 700px;
       margin: 0 auto 16px;
@@ -355,9 +255,8 @@
       font-size: 1rem;
     }
 
-    /* Stack the toggle and the permission text vertically */
     .loc-toggle-container {
-      display:flex;
+      display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
@@ -382,31 +281,30 @@
       z-index: 1;
       outline: none;
     }
+
     .loc-toggle input {
       display: none;
     }
-    /* slightly darker background so toggle looks clickable
-       Updated to include "No"/"Yes" labels and a separate knob element */
+
     .loc-slider {
       width: 100%;
       height: 100%;
-      background: #e8f0f7; /* subtle bluish-gray */
+      background: #e8f0f7;
       border-radius: 20px;
       position: relative;
       transition: background 0.18s ease, box-shadow 0.18s ease, transform 0.12s ease;
       border: 1px solid rgba(13,71,161,0.08);
       box-sizing: border-box;
-      padding: 0 8px; /* spacing for labels */
+      padding: 0 8px;
       display: inline-block;
       vertical-align: middle;
     }
-    /* remove lift/shadow on hover for base loc-slider; targeted hover will still apply where needed */
+
     .loc-slider:hover {
       transform: none !important;
       box-shadow: none !important;
     }
 
-    /* left = "No", right = "Yes" labels */
     .loc-slider::before,
     .loc-slider::after {
       position: absolute;
@@ -418,10 +316,10 @@
       pointer-events: none;
       transition: opacity 0.16s ease;
     }
+
     .loc-slider::before { content: "No"; left: 10px; opacity: 1; }
     .loc-slider::after  { content: "Yes"; right: 10px; opacity: 0; }
 
-    /* knob as a child so pseudo elements can be used for labels */
     .loc-knob {
       position: absolute;
       top: 50%;
@@ -436,132 +334,189 @@
       will-change: left;
     }
 
-    /* Darker ON color to match CTA hover / more visible */
     .loc-toggle input:checked + .loc-slider {
-      /* use the CTA normal color (not the hover/active color) */
       background: var(--accent-blue);
       box-shadow: 0 8px 22px rgba(90,160,210,0.18);
     }
+
     .loc-toggle input:checked + .loc-slider::before { opacity: 0; }
     .loc-toggle input:checked + .loc-slider::after  { 
-      opacity: 1;
-      color: #fff; /* make "Yes" text white when ON */
-    }
-    .loc-toggle input:checked + .loc-slider .loc-knob {
-      left: calc(100% - 6px - 22px);
+      opacity: 1; 
     }
 
-    /* Permission text now sits below the toggle */
-    #loc-status {
-      font-size: 0.95rem;
-      color: var(--text-color);
+    .loc-toggle.areas-toggle-label input:checked + .loc-slider::after  { 
+      opacity: 1; 
+    }
+
+    .loc-toggle.areas-toggle-label input:checked + .loc-slider {
+      background-color: var(--accent-blue) !important;
+      box-shadow: 0 8px 22px rgba(90,160,210,0.18) !important;
+    }
+
+    /* Ensure the "Yes" text is white when the toggle is in the checked (Yes) state */
+    .loc-toggle input:checked + .loc-slider::after,
+    .loc-toggle.areas-toggle-label input:checked + .loc-slider::after {
+      color: #ffffff !important;
+    }
+
+    .container .loc-toggle.areas-toggle-label:hover .loc-slider,
+    .container .loc-toggle.areas-toggle-label .loc-slider:hover {
+      background-color: var(--cta-hover-blue) !important;
+      color: #fff !important;
+    }
+
+    /* Help Us Section */
+    .help-section {
+      background: #fff;
+      padding: 40px 20px;
+      margin: 2rem auto 0 auto;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+      max-width: 900px;
+    }
+
+    .help-section h2 {
+      color: #1a3d4c;
+      margin-bottom: 1rem;
+      font-size: 1.5rem;
       font-weight: 600;
-      margin-top: 4px;
       text-align: center;
-      min-width: 0;
     }
 
-    .loc-toggle:focus-within .loc-slider {
-      box-shadow: 0 0 0 4px rgba(95,168,211,0.12);
+    .help-section p {
+      max-width: 700px;
+      margin: 0 auto 20px;
+      text-align: center;
+      color: #2e3d49;
+      font-size: 1.1em;
     }
 
-    @media (max-width: 560px) {
-      .loc-toggle.areas-toggle-label {
-        width: 70px !important; /* Reduce from default width on mobile */
-      }
-      
-      .areas-slider::before { left: 8px; }
-      .areas-slider::after  { right: 8px; }
-    /* Waiting area styles */
-    .waiting-count-label {
-      position: absolute;
-      background: white;
-      border: 2px solid #FF6B6B;
-      border-radius: 50%;
-      color: #333;
-      font-weight: bold;
-      padding: 8px;
-      min-width: 24px;
-      height: 24px;
-      display: flex;
+    .cta-button {
+      display: inline-block;
+      padding: 10px 24px;
+      background-color: var(--accent-blue);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background-color 0.3s;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .cta-button:hover {
+      background-color: var(--cta-hover-blue);
+    }
+
+    /* Back button */
+    .back-button {
+      background-color: var(--accent-blue);
+      color: white;
+      border: none;
+      border-radius: 999px;
+      padding: 8px 16px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      transition: background-color 0.3s;
+      width: var(--areas-toggle-width);
+      min-width: var(--areas-toggle-width);
+      max-width: var(--areas-toggle-width);
+      height: 36px;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-      z-index: 1000;
-      pointer-events: none;
+      box-sizing: border-box;
     }
 
-    /* Add inside the existing <style> tag */
-    .overlay-toggle-container {
-      margin-top: 10px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
+    .container .back-button:hover {
+      background-color: var(--cta-hover-blue) !important;
+      color: white !important;
     }
 
-    .overlay-toggle {
-      position: relative;
-      display: inline-block;
-      width: 60px;
-      height: 34px;
+    .container button:hover,
+    .container label:hover {
+      background-color: transparent !important;
+      box-shadow: none !important;
+      transform: none !important;
     }
 
-    .overlay-toggle input {
-      opacity: 0;
-      width: 0;
-      height: 0;
+    /* Destination dropdown */
+    #to-select {
+      height: 36px !important;
+      min-height: 36px !important;
+      max-height: 36px !important;
+      padding: 8px !important;
+      box-sizing: border-box !important;
+      background-color: var(--accent-blue) !important;
+      color: #fff !important;
+      border: 1px solid rgba(0,0,0,0.08) !important;
+      font-size: 14px !important;
+      border-radius: 4px !important;
     }
 
-    .overlay-slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: #ccc;
-      transition: .4s;
-      border-radius: 34px;
+    #to-select:hover {
+      background-color: var(--cta-hover-blue) !important;
+      color: white !important;
     }
 
-    .overlay-slider:before {
-      position: absolute;
-      content: "";
-      height: 26px;
-      width: 26px;
-      left: 4px;
-      bottom: 4px;
-      background-color: white;
-      transition: .4s;
-      border-radius: 50%;
+    /* Waiting areas toggle */
+    .loc-toggle.areas-toggle-label {
+      width: var(--areas-toggle-width) !important;
+      height: 36px !important;
+      min-height: 36px !important;
+      max-height: 36px !important;
+      box-sizing: border-box !important;
     }
 
-    input:checked + .overlay-slider {
-      background-color: var(--primary-color);
+    .loc-toggle.areas-toggle-label .loc-slider {
+      height: 100% !important;
+      box-sizing: border-box !important;
+      background: #e8f0f7 !important;
+      border: 1px solid rgba(13,71,161,0.08) !important;
+      padding: 0 10px !important;
     }
 
-    input:checked + .overlay-slider:before {
-      transform: translateX(26px);
+    .loc-toggle.areas-toggle-label .loc-slider::before {
+      content: "Hide";
+      left: 8px;
     }
 
-    /* New styles for waiting areas toggle */
-    .toggle-container {
-      display: flex;
-      align-items: center;
-      justify-content: space-between; /* This will space out the elements */
+    .loc-toggle.areas-toggle-label .loc-slider::after {
+      content: "Show";
+      right: 8px;
+      color: #fff;
     }
 
-    .toggle-text {
-      display: flex;
-      align-items: center; /* Vertically center the text */
+    .loc-toggle.areas-toggle-label input:checked + .loc-slider::before { 
+      opacity: 0; 
     }
 
-    .toggle-text.show {
-      margin-left: auto; /* Push the "Show" text to the right */
+    .loc-toggle.areas-toggle-label input:checked + .loc-slider::after  { 
+      opacity: 1; 
     }
 
-    .toggle-switch {
-      margin: 0 10px; /* Space between the text and the toggle switch */
+    .loc-toggle.areas-toggle-label input:checked + .loc-slider {
+      background-color: var(--accent-blue) !important;
+      box-shadow: 0 8px 22px rgba(90,160,210,0.18) !important;
+    }
+
+    .container .loc-toggle.areas-toggle-label:hover .loc-slider,
+    .container .loc-toggle.areas-toggle-label .loc-slider:hover {
+      background-color: var(--cta-hover-blue) !important;
+      color: #fff !important;
+    }
+
+    #no-waiting-message {
+      display: none;
+      color: #FF6B6B;
+      font-weight: 600;
+      font-size: 0.85rem;
+      white-space: nowrap;
     }
 
     .modal {
@@ -624,248 +579,58 @@
       margin-top: 10px;
       transition: background-color 0.3s;
     }
+
     .modal button:hover {
       background-color: var(--cta-hover-blue);
     }
 
-    /* Responsive adjustments for modal */
-    @media (max-width: 560px) {
+    @media (max-width: 768px) {
+      .nav-links {
+        display: none;
+        position: absolute;
+        top: 60px;
+        right: 20px;
+        flex-direction: column;
+        background-color: var(--primary-teal);
+        border: 1px solid #ddd;
+        padding: 10px 20px;
+        border-radius: 5px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+      }
+
+      .nav-links.show {
+        display: flex;
+      }
+
+      .menu-toggle {
+        display: block;
+      }
+
+      .container {
+        padding: 1rem;
+      }
+
+      #map {
+        height: 450px;
+      }
+
+      section#contact {
+        padding: 30px 10px;
+      }
+
       .modal-panel {
         padding: 1.5rem;
       }
+
       .modal h3 {
         font-size: 1.1rem;
       }
+
       .modal button {
         width: 100%;
         padding: 12px;
         font-size: 16px;
       }
-    }
-
-    /* Facebook-style action bar */
-    .container {
-      display: flex;
-      flex-direction: column;
-    }
-
-    #map {
-      width: 100%;
-      height: 750px;
-      border-radius: 10px;
-      border: 1px solid #e0e0e0;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-      margin-bottom: 0; /* Remove bottom margin since action bar is next */
-    }
-
-    /* Hover effects for action buttons */
-    .container button:hover,
-    .container label:hover {
-      /* no global hover visual — specific elements will get their own hover rules */
-      background-color: transparent !important;
-      box-shadow: none !important;
-      transform: none !important;
-    }
-
-    /* New styles for Waiting Areas toggle (match Are you waiting as No/Yes) */
-    .loc-toggle.areas-toggle-label {
-      width: var(--areas-toggle-width) !important;
-      height: 36px !important;
-      min-height: 36px !important;
-      max-height: 36px !important;
-      box-sizing: border-box;
-    }
-
-    .loc-toggle.areas-toggle-label .loc-slider {
-      height: 100% !important;
-      box-sizing: border-box;
-    }
-
-    .areas-toggle {
-      width: var(--areas-toggle-width);
-      height: 36px;
-      position: relative;
-      display: inline-block;
-      cursor: pointer;
-      flex: none;
-      z-index: 1;
-    }
-    .areas-toggle input { display: none; }
-
-    .areas-slider {
-      width: 100%;
-      height: 100%;
-      background: #e8f0f7;
-      border-radius: 20px;
-      position: relative;
-      transition: background 0.18s ease, box-shadow 0.18s ease;
-      border: 1px solid rgba(13,71,161,0.08);
-      padding: 0 10px;
-      box-sizing: border-box;
-      display: inline-block;
-      vertical-align: middle;
-    }
-
-    /* remove lift/shadow for areas-slider so our CTA hover override takes effect cleanly */
-    .areas-slider:hover {
-      transform: none !important;
-      box-shadow: none !important;
-    }
-
-    /* left = "Hide", right = "Show" labels */
-    .areas-slider::before,
-    .areas-slider::after {
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 12px;
-      font-weight: 700;
-      color: rgba(46,61,73,0.75);
-      pointer-events: none;
-      transition: opacity 0.16s ease;
-      white-space: nowrap; /* Prevent text wrapping */
-    }
-    .areas-slider::before { content: "Hide"; left: 12px; opacity: 1; }
-    .areas-slider::after  { content: "Show"; right: 12px; opacity: 0; color: #fff; }
-
-    .areas-knob {
-      position: absolute;
-      top: 50%;
-      left: 6px;
-      transform: translateY(-50%);
-      width: 26px;
-      height: 26px;
-      background: var(--white);
-      border-radius: 50%;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.12);
-      transition: left 0.18s ease, box-shadow 0.12s ease;
-      will-change: left;
-    }
-
-    /* Checked state */
-    .areas-toggle input:checked + .areas-slider {
-      background: var(--accent-blue);
-      box-shadow: 0 8px 22px rgba(90,160,210,0.18);
-    }
-    .areas-toggle input:checked + .areas-slider::before { opacity: 0; }
-    .areas-toggle input:checked + .areas-slider::after  { opacity: 1; }
-    .areas-toggle input:checked + .areas-slider .areas-knob {
-      left: calc(100% - 6px - 26px);
-      background: var(--white);
-    }
-
-    /* Waiting areas label (initially hidden) */
-    #no-waiting-message {
-      display: none;
-      color: #FF6B6B;
-      font-weight: 600;
-      font-size: 0.85rem;
-      white-space: nowrap;
-    }
-
-    /* Show waiting areas button (initially hidden) */
-    #show-waiting-areas {
-      display: none;
-      padding: 10px 20px;
-      background-color: var(--accent-blue);
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 14px;
-      cursor: pointer;
-      margin-top: 10px;
-      transition: background-color 0.3s;
-    }
-    #show-waiting-areas:hover {
-      background-color: var(--cta-hover-blue);
-    }
-
-    @media (max-width: 768px) {
-      #map {
-        height: 450px;
-      }
-      
-      .container {
-        padding: 1rem;
-      }
-      
-      /* Stack action bar vertically on mobile */
-      .action-bar {
-        flex-direction: column;
-        gap: 8px;
-      }
-      
-      .action-bar > div {
-        width: 100%;
-        justify-content: center;
-      }
-      
-      #to-select {
-        max-width: 150px;
-      }
-    }
-
-    /* Override labels for the waiting-areas toggle only (keep Are you waiting as No/Yes) */
-    .loc-toggle.areas-toggle-label .loc-slider::before {
-      content: "Hide";
-      left: 8px;
-    }
-    .loc-toggle.areas-toggle-label .loc-slider::after {
-      content: "Show";
-      right: 8px;
-      color: #fff;
-    }
-
-    /* Ensure the checked/unchecked opacity behavior matches the base loc-toggle */
-    .loc-toggle.areas-toggle-label input:checked + .loc-slider::before { opacity: 0; }
-    .loc-toggle.areas-toggle-label input:checked + .loc-slider::after  { opacity: 1; }
-    .loc-toggle.areas-toggle-label .loc-slider::before,
-    .loc-toggle.areas-toggle-label .loc-slider::after {
-      transition: opacity 0.16s ease;
-    }
-
-    /* Back button: match toggle widths using the same CSS variable (no runtime dependency) */
-    button[onclick*="index.html"] {
-      width: var(--areas-toggle-width);
-      min-width: var(--areas-toggle-width);
-      max-width: var(--areas-toggle-width);
-      height: 36px;
-      min-height: 36px;
-      max-height: 36px;
-      padding: 8px 16px;
-      line-height: 1;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      box-sizing: border-box;
-      border-radius: 999px; /* oval / pill shape */
-    }
-
-    /* Ensure dropdown has consistent height */
-    #to-select {
-      height: 36px;
-      min-height: 36px;
-      max-height: 36px;
-      padding: 8px;
-      box-sizing: border-box;
-      /* new: use primary teal background and white text for the destination dropdown */
-      background-color: var(--accent-blue);
-      color: #fff;
-      border: 1px solid rgba(0,0,0,0.08);
-    }
-
-    /* Ensure waiting-areas toggle has consistent height and use the shared width variable */
-    .loc-toggle.areas-toggle-label {
-      width: var(--areas-toggle-width) !important;
-      height: 36px !important;
-      min-height: 36px !important;
-      max-height: 36px !important;
-      box-sizing: border-box;
-    }
-
-    .loc-toggle.areas-toggle-label .loc-slider {
-      height: 100% !important;
-      box-sizing: border-box;
     }
   </style>
 </head>
@@ -986,7 +751,7 @@
   <!-- Destination modal (appears when enabling 'Are you waiting?') -->
   <div id=  "destination-modal" class="modal" aria-hidden="true" role="dialog" style="display:none;">
     <div class="modal-backdrop" style="position:fixed;iynset:0;background:rgba(0,0,0,0.45);"></div>
-    <div class="modal-panel" role="document" style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:#fff;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,0.2);padding:20px;max-width:360px;width:90%;z-index:10001;">
+    <div class="modal-panel" role="document" style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:#fff;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,0.2);padding:20px;max-width:360px; width:90%;z-index:10001;">
       <h3 style="margin-bottom:8px;">Select your destination</h3>
       <select id="modal-destination" style="width:100%; padding:10px; border-radius:6px; border:1px solid #ccc; margin-bottom:12px;">
         <option value="">-- choose destination --</option>
@@ -1013,7 +778,7 @@
   <!-- Help Us Section -->
   <section class="help-section" style="background: #fff;">
     <h2>Help us!</h2>
-    <p>x
+    <p>
       We are currently conducting research to improve JeepnEE. Your feedback is valuable to us! Please let us know your thoughts and suggestions about this project.
     </p>
     <div style="text-align:center;">
@@ -1048,7 +813,8 @@
       serverTimestamp,
       remove,
       // push,  <-- removed
-      get
+      get,
+      runTransaction
     } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
     const firebaseConfig = {
@@ -1181,11 +947,78 @@
       }
     }
 
+    // New: increment dailyInformation once per device per day using a configurable base (Day_1 starts at BASE_DAY_START_ISO midnight UTC)
+    async function incrementDailyInformationOncePerDay() {
+      try {
+        const now = Date.now();
+        const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+        // === CONFIGURE THIS: ISO date string (midnight UTC) that will be treated as Day_1 start ===
+        // Set to 2025-11-30 as requested
+        const BASE_DAY_START_ISO = "2025-11-30";
+        // ================================================================================
+
+        // compute base epoch ms (midnight UTC of the chosen base date)
+        const baseEpochMs = Date.parse(BASE_DAY_START_ISO + "T00:00:00.000Z");
+        if (Number.isNaN(baseEpochMs)) {
+          console.warn("incrementDailyInformationOncePerDay: invalid BASE_DAY_START_ISO, falling back to Unix epoch");
+        }
+
+        // dayIndex = number of full days elapsed since base (0 => Day_1)
+        let dayIndex = Math.floor((now - (Number.isNaN(baseEpochMs) ? 0 : baseEpochMs)) / MS_PER_DAY);
+        if (dayIndex < 0) dayIndex = 0; // prevent negative indexes if now < base
+        const dayNumber = dayIndex + 1;
+        const dayKey = `Day_${dayNumber}`;
+
+        // compute start/end timestamps for this day interval (ms since epoch)
+        const dayStart = (Number.isNaN(baseEpochMs) ? 0 : baseEpochMs) + dayIndex * MS_PER_DAY;
+        const dayEnd = dayStart + MS_PER_DAY - 1;
+
+        // transactionally mark this user as counted for this custom dayIndex
+        const userDayRef = ref(database, `userInformation/${userInfoId}/currentData/lastDailyCountedDayIndex`);
+        const userTx = await runTransaction(userDayRef, (current) => {
+          if (Number(current) === dayIndex) {
+            // already counted for this custom day index -> abort
+            return;
+          }
+          return dayIndex; // mark as counted for this custom day
+        });
+
+        if (!userTx.committed) {
+          // already counted today for this device
+          return;
+        }
+
+        // increment the day bucket under dailyInformation/Day_{N}
+        const dailyRef = ref(database, `dailyInformation/${dayKey}`);
+        await runTransaction(dailyRef, (current) => {
+          if (current === null) {
+            return {
+              count: 1,
+              startTimestamp: dayStart,
+              endTimestamp: dayEnd,
+              lastUpdated: serverTimestamp()
+            };
+          }
+          const next = Object.assign({}, current);
+          next.count = (Number(current.count) || 0) + 1;
+          next.lastUpdated = serverTimestamp();
+          if (!current.startTimestamp) next.startTimestamp = dayStart;
+          if (!current.endTimestamp) next.endTimestamp = dayEnd;
+          return next;
+        });
+      } catch (err) {
+        console.warn("incrementDailyInformationOncePerDay failed", err);
+      }
+    }
+
     // ensure a record exists, increment access count, then sync waitingStatus ONCE to local toggle
     (async function initUserInfoAndSyncWaiting() {
       try {
         await createOrUpdateUserInfo();
         await incrementAccessCount();
+        // increment dailyInformation (only once per device per epoch-day)
+        try { await incrementDailyInformationOncePerDay(); } catch (e) { console.warn('dailyInformation increment failed', e); }
       } catch (e) {
         // ignore errors from create/update; still attempt sync
       }
@@ -1263,14 +1096,25 @@
     // Keep overlays in sync with DB — now reads from userInformation with new categorized structure
     onValue(userInformationRef, (snapshot) => {
       const allUsers = snapshot.val() || {};
+      window.lastUserSnapshot = snapshot; // Store for destination filter recount
 
       // reset counts
       Object.values(window.barangayAreas || {}).forEach(a => a.waitingCount = 0);
 
-      // count users per area (only those with waitingStatus='Yes' in currentData)
+      // Get the currently selected destination from the dropdown
+      const selectedDestination = document.getElementById('to-select')?.value || '';
+
+      // count users per area (only those with status='online' AND waitingStatus='Yes')
       Object.values(allUsers).forEach(user => {
-        // Check new structure: user.currentData.waitingStatus must be 'Yes'
-        if (!user || !user.currentData || user.currentData.waitingStatus !== 'Yes') return;
+        // Check: user must be online AND waiting
+        if (!user || !user.currentData) return;
+        if (user.currentData.status !== 'online' || user.currentData.waitingStatus !== 'Yes') return;
+        
+        // If a destination is selected, only count users heading to that destination
+        if (selectedDestination) {
+          const userDestination = user.currentData.destination || '';
+          if (userDestination !== selectedDestination) return; // Skip users not going to selected destination
+        }
         
         // Get coordinates from new structure: currentData.latitude/longitude
         const lat = user.currentData.latitude;
@@ -1307,6 +1151,91 @@
       });
     });
 
+    // Add this listener to re-count when destination changes
+    (function attachDestinationChangeListener() {
+      const toSelect = document.getElementById('to-select');
+      if (!toSelect) return;
+      
+      toSelect.addEventListener('change', function() {
+        // Trigger a manual recount using the last stored snapshot
+        const snapshot = window.lastUserSnapshot;
+        if (!snapshot) return;
+        const allUsers = snapshot.val() || {};
+        const selectedDestination = this.value || '';
+
+        // reset counts
+        Object.values(window.barangayAreas || {}).forEach(a => a.waitingCount = 0);
+
+        // recount with new destination filter (online AND waitingStatus === 'Yes')
+        Object.values(allUsers).forEach(user => {
+          if (!user || !user.currentData) return;
+          if (user.currentData.status !== 'online' || user.currentData.waitingStatus !== 'Yes') return;
+
+          if (selectedDestination) {
+            const userDestination = user.currentData.destination || '';
+            if (userDestination !== selectedDestination) return;
+          }
+
+          const lat = user.currentData.latitude;
+          const lng = user.currentData.longitude;
+          if (lat == null || lng == null) return;
+
+          try {
+            const u = new google.maps.LatLng(lat, lng);
+            Object.entries(window.barangayAreas || {}).forEach(([name, area]) => {
+              const c = new google.maps.LatLng(area.lat, area.lng);
+              const d = google.maps.geometry.spherical.computeDistanceBetween(u, c);
+              if (d <= area.radius) area.waitingCount = (area.waitingCount || 0) + 1;
+            });
+          } catch (e) {
+            // ignore geometry errors for malformed values
+          }
+        });
+
+        // update label text values
+        Object.entries(window.barangayAreas || {}).forEach(([name, area]) => {
+          const label = window.barangayLabels && window.barangayLabels[name];
+          if (label && label.element) label.element.textContent = String(area.waitingCount || 0);
+        });
+
+        // apply visibility using existing centralized logic
+        try { applyWaitingAreasFromCounts(); } catch (e) { console.warn('applyWaitingAreasFromCounts failed', e); }
+
+        // ensure overlays are attached/detached and drawn immediately
+        Object.entries(window.barangayAreas || {}).forEach(([name, area]) => {
+          const label = window.barangayLabels && window.barangayLabels[name];
+          const circle = window.barangayCircles && window.barangayCircles[name];
+          const shouldShow = (document.getElementById('waiting-areas-toggle')?.checked === true) && (Number(area.waitingCount || 0) > 0);
+
+          if (label && label.overlay) {
+            try {
+              // attach or detach overlay view
+              label.overlay.setMap(shouldShow ? map : null);
+              // schedule a draw to ensure projection is available (non-blocking)
+              if (shouldShow) {
+                requestAnimationFrame(() => {
+                  try { if (typeof label.overlay.draw === 'function') label.overlay.draw(); } catch (e) {}
+                });
+              }
+            } catch (e) {
+              console.warn('label overlay refresh failed', name, e);
+            }
+          }
+
+          if (circle) {
+            try { circle.setVisible(shouldShow); } catch (e) {}
+          }
+        });
+
+        // update "no waiting" message
+        const noWaitingMsg = document.getElementById('no-waiting-message');
+        if (noWaitingMsg) {
+          const hasAnyWaiting = Object.values(window.barangayAreas || {}).some(area => Number(area.waitingCount || 0) > 0);
+          noWaitingMsg.style.display = ((document.getElementById('waiting-areas-toggle')?.checked === true) && !hasAnyWaiting) ? 'block' : 'none';
+        }
+      });
+    })();
+    
     // update this device's waiting user record → now writes to userInformation.currentData
     async function updateUserLocation(position) {
       try {
@@ -1669,6 +1598,7 @@
 
           // Capture first location now that user has granted permission
           if (typeof window.captureFirstLocation === 'function') {
+
             window.captureFirstLocation().catch(() => {});
           }
 
@@ -1730,6 +1660,7 @@
       }
       window.lastKnownPosition = null;
 
+     
       // Do NOT remove or clear the user's stored location/destination/timestamps here.
       // Historical data is preserved in userInformation; keep fields intact.
 
@@ -1905,6 +1836,7 @@
           strokeWeight: 2,
           fillColor: '#FF6B6B',
           fillOpacity: 0.12,
+         
           map: map,
           center: { lat: data.lat, lng: data.lng },
 
@@ -1924,8 +1856,11 @@
           const proj = this.getProjection();
           if (!proj) return;
           const pos = proj.fromLatLngToDivPixel(new google.maps.LatLng(data.lat, data.lng));
-          labelDiv.style.left = (pos.x - (labelDiv.offsetWidth / 2)) + 'px';
-          labelDiv.style.top = (pos.y - (labelDiv.offsetHeight / 2)) + 'px';
+          // Use CSS transform to center the label; do NOT subtract offsetWidth/offsetHeight here.
+          labelDiv.style.left = pos.x + 'px';
+          labelDiv.style.top = pos.y + 'px';
+          // Ensure the centering transform is applied even if CSS gets overridden elsewhere
+          labelDiv.style.transform = 'translate(-50%, -50%)';
         };
         overlay.onRemove = function() {
           if (labelDiv.parentElement) labelDiv.parentElement.removeChild(labelDiv);
@@ -2010,89 +1945,79 @@
       const noWaitingMsg = document.getElementById('no-waiting-message');
       if (!waitingToggle) return;
 
-      // Helper to update "No waiting users" message based on toggle state and waiting count
       function updateNoWaitingMessage() {
         if (!noWaitingMsg) return;
         const enabled = waitingToggle.checked === true;
         const hasAnyWaiting = Object.values(window.barangayAreas || {}).some(area => Number(area.waitingCount || 0) > 0);
-        // Show ONLY when toggle is ON AND no waiting users exist
         noWaitingMsg.style.display = (enabled && !hasAnyWaiting) ? 'block' : 'none';
       }
 
-      // initialize: ensure overlays hidden until user enables the toggle
       stopWaitingAreasPolling();
       updateNoWaitingMessage();
 
       waitingToggle.addEventListener('change', function (e) {
         const enabled = Boolean(e.target.checked);
         if (enabled) startWaitingAreasPolling(); else stopWaitingAreasPolling();
-        // Update message immediately when toggle changes
         updateNoWaitingMessage();
       });
 
-      // if checkbox is pre-checked on load, start polling
       if (waitingToggle.checked) startWaitingAreasPolling();
     })();
 
+    // DOM ready: menu hamburger + align toggle/back button heights
     document.addEventListener('DOMContentLoaded', () => {
+      // Match waiting toggle height to back button for consistent UI
       function matchWaitingToggleToBackButton() {
-        // Keep runtime code limited to matching heights only so the width comes from CSS variables.
         const backBtn = document.querySelector("button[onclick*=\"index.html\"]");
+        const toggle = document.querySelector('.loc-toggle.areas-toggle-label');
+        if (!backBtn || !toggle) return;
+        const ht = backBtn.offsetHeight || backBtn.clientHeight || 36;
+        backBtn.style.height = ht + 'px';
+        backBtn.style.minHeight = ht + 'px';
         backBtn.style.maxHeight = ht + 'px';
+        toggle.style.height = ht + 'px';
+        toggle.style.minHeight = ht + 'px';
+        toggle.style.maxHeight = ht + 'px';
       }
-
       matchWaitingToggleToBackButton();
       window.addEventListener('resize', matchWaitingToggleToBackButton);
-    });
-  </script>
-  <script>
-    // Ensure hamburger works: toggle class + accessibility attributes
-    function toggleMenu() {
-      const nav = document.getElementById('navLinks');
-      const btn = document.querySelector('.menu-toggle');
-      if (!nav || !btn) return;
-      const opened = nav.classList.toggle('show');
-      btn.setAttribute('aria-expanded', opened ? 'true' : 'false');
-      nav.setAttribute('aria-hidden', opened ? 'false' : 'true');
-    }
 
-    // Close menu when a nav link is clicked (mobile UX)
-    document.addEventListener('click', (e) => {
-      const nav = document.getElementById('navLinks');
-      const btn = document.querySelector('.menu-toggle');
-      if (!nav || !btn) return;
-      const anchor = e.target.closest('.nav-links a');
-      if (anchor && nav.classList.contains('show')) {
-        nav.classList.remove('show');
+      // Simple accessible hamburger/menu toggle
+      (function initHamburger() {
+        const btn = document.querySelector('.menu-toggle');
+        const nav = document.getElementById('navLinks');
+        if (!btn || !nav) return;
         btn.setAttribute('aria-expanded', 'false');
+        btn.setAttribute('aria-controls', 'navLinks');
         nav.setAttribute('aria-hidden', 'true');
-      }
-    });
 
-    // Initialize ARIA attributes for hamburger and nav
-    (function initHamburger() {
-      const nav = document.getElementById('navLinks');
-      const btn = document.querySelector('.menu-toggle');
-      if (!nav || !btn) return;
-      btn.setAttribute('role', 'button');
-      btn.setAttribute('aria-controls', 'navLinks');
-      btn.setAttribute('aria-expanded', 'false');
-      nav.setAttribute('aria-hidden', 'true');
-    })();
+        btn.addEventListener('click', () => {
+          const opened = nav.classList.toggle('show');
+          nav.setAttribute('aria-hidden', opened ? 'false' : 'true');
+          btn.setAttribute('aria-expanded', opened ? 'true' : 'false');
+        });
 
-    // Ensure menu closes when resizing to desktop
-    window.addEventListener('resize', () => {
-      const nav = document.getElementById('navLinks');
-      const btn = document.querySelector('.menu-toggle');
-      if (!nav || !btn) return;
-      if (window.innerWidth > 768 && nav.classList.contains('show')) {
-        nav.classList.remove('show');
-        btn.setAttribute('aria-expanded', 'false');
-        nav.setAttribute('aria-hidden', 'true');
-      }
+        // Close menu when a nav link is clicked (mobile)
+        nav.addEventListener('click', (e) => {
+          const a = e.target.closest('a');
+          if (!a) return;
+          if (window.innerWidth <= 768 && nav.classList.contains('show')) {
+            nav.classList.remove('show');
+            nav.setAttribute('aria-hidden', 'true');
+            btn.setAttribute('aria-expanded', 'false');
+          }
+        });
+
+        // Close when resizing to desktop
+        window.addEventListener('resize', () => {
+          if (window.innerWidth > 768 && nav.classList.contains('show')) {
+            nav.classList.remove('show');
+            nav.setAttribute('aria-hidden', 'true');
+            btn.setAttribute('aria-expanded', 'false');
+          }
+        });
+      })();
     });
   </script>
 </body>
 </html>
-
-
