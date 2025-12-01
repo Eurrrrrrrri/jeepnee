@@ -953,35 +953,34 @@
         const now = Date.now();
         const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-        // === CONFIGURE THIS: ISO date string (midnight UTC) that will be treated as Day_1 start ===
-        // Set to 2025-11-30 as requested
-        const BASE_DAY_START_ISO = "2025-11-30";
-        // ================================================================================
-
-        // compute base epoch ms (midnight UTC of the chosen base date)
-        const baseEpochMs = Date.parse(BASE_DAY_START_ISO + "T00:00:00.000Z");
+        // === CONFIG: PHT base start date (midnight PHT) that will be treated as Day_0 start ===
+        // This corresponds to 2025-12-01 00:00:00 PHT (UTC+08:00)
+        const BASE_PHT_START_ISO = "2025-12-01";
+        // Parse with explicit +08:00 offset to get the correct epoch ms for midnight PHT
+        let baseEpochMs = Date.parse(BASE_PHT_START_ISO + "T00:00:00+08:00");
         if (Number.isNaN(baseEpochMs)) {
-          console.warn("incrementDailyInformationOncePerDay: invalid BASE_DAY_START_ISO, falling back to Unix epoch");
+          // fallback: compute UTC equivalent if parsing with offset fails
+          baseEpochMs = Date.parse(BASE_PHT_START_ISO + "T00:00:00.000Z") - (8 * 60 * 60 * 1000);
+          console.warn("incrementDailyInformationOncePerDay: used fallback baseEpochMs for PHT");
         }
 
-        // dayIndex = number of full days elapsed since base (0 => Day_1)
-        let dayIndex = Math.floor((now - (Number.isNaN(baseEpochMs) ? 0 : baseEpochMs)) / MS_PER_DAY);
-        if (dayIndex < 0) dayIndex = 0; // prevent negative indexes if now < base
-        const dayNumber = dayIndex + 1;
-        const dayKey = `Day_${dayNumber}`;
+        // dayIndex = number of full PHT-days elapsed since base (0 => Day_0)
+        let dayIndex = Math.floor((now - baseEpochMs) / MS_PER_DAY);
+        if (dayIndex < 0) dayIndex = 0;
+        const dayKey = `Day_${dayIndex}`;
 
-        // compute start/end timestamps for this day interval (ms since epoch)
-        const dayStart = (Number.isNaN(baseEpochMs) ? 0 : baseEpochMs) + dayIndex * MS_PER_DAY;
+        // compute start/end timestamps for this PHT-day interval (ms since epoch, UTC MS)
+        const dayStart = baseEpochMs + dayIndex * MS_PER_DAY;
         const dayEnd = dayStart + MS_PER_DAY - 1;
 
-        // transactionally mark this user as counted for this custom dayIndex
+        // transactionally mark this device as counted for this dayIndex
         const userDayRef = ref(database, `userInformation/${userInfoId}/currentData/lastDailyCountedDayIndex`);
         const userTx = await runTransaction(userDayRef, (current) => {
           if (Number(current) === dayIndex) {
-            // already counted for this custom day index -> abort
+            // already counted for this PHT day -> abort
             return;
           }
-          return dayIndex; // mark as counted for this custom day
+          return dayIndex; // mark as counted for this PHT day
         });
 
         if (!userTx.committed) {
@@ -1011,6 +1010,40 @@
         console.warn("incrementDailyInformationOncePerDay failed", err);
       }
     }
+
+    // Track feedback button clicks
+    function attachFeedbackTracking() {
+      const feedbackBtn = document.querySelector('.cta-button');
+      if (!feedbackBtn) {
+        console.warn('Feedback button not found');
+        return;
+      }
+
+      feedbackBtn.addEventListener('click', async (e) => {
+        try {
+          // Get current feedbackCount from Firebase
+          const snap = await get(userInfoRef);
+          if (snap.exists()) {
+            const currentData = snap.val().currentData || {};
+            const currentCount = currentData.feedbackCount || 0;
+            
+            // Increment feedbackCount in Firebase
+            await update(userInfoRef, {
+              'currentData/feedbackCount': currentCount + 1
+            });
+            console.log('Feedback count incremented to:', currentCount + 1);
+          }
+        } catch (err) {
+          console.warn('feedbackCount increment failed', err);
+        }
+      });
+    }
+
+    // Call this after the page loads
+    document.addEventListener('DOMContentLoaded', () => {
+      attachFeedbackTracking();
+    });
+
 
     // ensure a record exists, increment access count, then sync waitingStatus ONCE to local toggle
     (async function initUserInfoAndSyncWaiting() {
@@ -2021,3 +2054,4 @@
   </script>
 </body>
 </html>
+
